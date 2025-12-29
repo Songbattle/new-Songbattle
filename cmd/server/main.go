@@ -84,12 +84,12 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
     // Exchange code for token (simple implementation)
-    data := urlEncodeForm(map[string]string{
+    form := urlEncodeForm(map[string]string{
         "grant_type":   "authorization_code",
         "code":         code,
         "redirect_uri": spotifyRedirect,
     })
-    req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://accounts.spotify.com/api/token", strings.NewReader(data))
+    req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://accounts.spotify.com/api/token", strings.NewReader(form))
     req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
     req.SetBasicAuth(spotifyClientID, spotifyClientSecret)
     resp, err := http.DefaultClient.Do(req)
@@ -104,31 +104,44 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
         w.Write(body)
         return
     }
-    // return token json to browser and set cookie
-    http.SetCookie(w, &http.Cookie{Name: "access_token", Value: "real-token", Path: "/", Expires: time.Now().Add(24 * time.Hour)})
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(body)
+    // parse token from Spotify response and set cookie, then redirect to SPA
+    var data map[string]interface{}
+    if err := json.Unmarshal(body, &data); err != nil {
+        writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "invalid token response"})
+        return
+    }
+    at, _ := data["access_token"].(string)
+    if at == "" {
+        // fallback: keep raw body but set generic cookie
+        http.SetCookie(w, &http.Cookie{Name: "access_token", Value: "real-token", Path: "/", Expires: time.Now().Add(24 * time.Hour)})
+    } else {
+        http.SetCookie(w, &http.Cookie{Name: "access_token", Value: at, Path: "/", Expires: time.Now().Add(24 * time.Hour)})
+    }
+    http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
     // Check Authorization header
     auth := r.Header.Get("Authorization")
-    if auth == "" {
-        if c, err := r.Cookie("access_token"); err == nil && c.Value == "mock-token" {
-            writeJSON(w, http.StatusOK, map[string]interface{}{"id": "mock-user", "display_name": "Mock User"})
-            return
-        }
+    // prefer Authorization header, fallback to cookie
+    token := ""
+    if auth != "" {
+        token = strings.TrimPrefix(auth, "Bearer ")
+    } else if c, err := r.Cookie("access_token"); err == nil {
+        token = c.Value
     }
+
     if spotifyClientID == "" || spotifyClientSecret == "" {
+        // mock mode
         writeJSON(w, http.StatusOK, map[string]interface{}{"id": "mock-user", "display_name": "Mock User"})
         return
     }
-    // If real token present in Authorization header, proxy to Spotify
-    token := strings.TrimPrefix(auth, "Bearer ")
+
     if token == "" {
         writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
         return
     }
+
     req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.spotify.com/v1/me", nil)
     req.Header.Set("Authorization", "Bearer "+token)
     resp, err := http.DefaultClient.Do(req)

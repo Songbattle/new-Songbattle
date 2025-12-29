@@ -2,36 +2,49 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
+</head>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Spotify Battle (MVP)</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;padding:16px}
-    .row{display:flex;gap:12px}
-    .card{flex:1;padding:12px;border:1px solid #ddd;border-radius:6px}
-    button{padding:8px 12px}
-  </style>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+  <header>
+    <h1>Spotify Battle</h1>
+    <div class="top-actions">
+      <div id="me" style="color:var(--muted)">Nicht angemeldet</div>
+      <button id="loginBtn">Login</button>
+      <button id="whoBtn" class="ghost">Aktualisieren</button>
+      <button id="logoutBtn" class="ghost">Logout</button>
+    </div>
+  </header>
 </head>
 <body>
   <h1>Spotify Battle — MVP</h1>
-  <div id="auth">
-    <button id="loginBtn">Login (Spotify / Mock)</button>
-    <button id="whoBtn">Me</button>
-    <div id="me"></div>
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="searchInput" type="text" placeholder="Album suchen..." />
+          <button id="searchBtn">Suchen</button>
+        </div>
+        <div id="searchResults" class="album-list" style="margin-top:12px"></div>
+      </div>
+
+      <div id="albumSection" style="margin-top:14px"></div>
+      <div id="votingSection" style="margin-top:14px"></div>
+    </div>
+
+    <aside>
+      <div class="card">
+        <h3>Tipps</h3>
+        <p class="muted">Wähle zwei Songs, um sie zu vergleichen. Ergebnisse werden im LocalStorage gespeichert.</p>
+        <div style="margin-top:10px"><button id="exportAll" class="ghost">Ergebnisse exportieren</button></div>
+      </div>
+    </aside>
   </div>
-
-  <hr/>
-  <div>
-    <input id="searchInput" placeholder="Album suchen..." />
-    <button id="searchBtn">Suchen</button>
-    <div id="searchResults"></div>
-  </div>
-
-  <hr/>
-  <div id="albumSection"></div>
-
-  <hr/>
-  <div id="votingSection"></div>
 
   <script src="/app.js"></script>
+  </div>
 </body>
 </html>
