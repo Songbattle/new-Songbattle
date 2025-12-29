@@ -3,42 +3,72 @@
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#071025 0%, #0b1320 100%);color:var(--white);min-height:100vh}
-.container{max-width:980px;margin:24px auto;padding:20px}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.container{max-width:1100px;margin:16px auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 h1{font-size:20px;margin:0}
 .top-actions{display:flex;gap:8px;align-items:center}
-button{background:var(--accent);color:#04210a;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--white);padding:6px 10px}
-input[type=text],input#searchInput{padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--white);min-width:260px}
-.grid{display:grid;grid-template-columns:1fr 320px;gap:18px}
+/* make buttons larger and touch-friendly */
+button{background:var(--accent);color:#04210a;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700;min-height:44px}
+button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--white);padding:8px 12px}
+input[type=text],input#searchInput{padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--white);min-width:0}
+.grid{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start}
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
-.album-list .album{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
-.album-list .album .cover{width:64px;height:64px;border-radius:6px;flex:0 0 64px;margin-right:10px;object-fit:cover}
-.album-list .album .meta{flex:1}
-.album-list .album .muted{color:var(--muted);font-size:13px}
+.album-list .album{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.album-list .album .cover{width:64px;height:64px;border-radius:8px;flex:0 0 64px;margin-right:12px;object-fit:cover}
+.album-list .album .meta{flex:1;min-width:0}
+.album-list .album .muted{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-actions img{border:2px solid rgba(255,255,255,0.03)}
 
 /* suggestions */
-.suggestions{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:6px;margin-top:8px;max-height:280px;overflow:auto}
-.suggestions .suggestion{display:flex;gap:8px;align-items:center;padding:8px;border-radius:6px;cursor:pointer}
+.suggestions{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:8px;margin-top:10px;max-height:320px;overflow:auto}
+.suggestions .suggestion{display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;cursor:pointer}
 .suggestions .suggestion:hover{background:rgba(255,255,255,0.02)}
-.suggestions .suggestion img{width:48px;height:48px;border-radius:6px;object-fit:cover}
-.suggestions .suggestion .meta{font-size:14px}
-.suggestions .empty{color:var(--muted);padding:8px}
-.suggestions .suggestion .openBtn{margin-left:8px;padding:6px 8px;border-radius:6px}
+.suggestions .suggestion img{width:56px;height:56px;border-radius:8px;object-fit:cover}
+.suggestions .suggestion .meta{font-size:14px;min-width:0}
+.suggestions .empty{color:var(--muted);padding:10px}
+.suggestions .suggestion .openBtn{margin-left:8px;padding:8px 10px;border-radius:8px}
 .tracks .track{padding:8px;border-bottom:1px dashed rgba(255,255,255,0.02)}
-.voting{display:flex;gap:12px}
-.vote-card{flex:1;padding:16px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);text-align:center}
-.center-controls{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;padding:8px}
-.center-controls button{min-width:120px}
+.voting{display:flex;gap:12px;align-items:stretch}
+.vote-card{flex:1;padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);text-align:center;min-height:120px;display:flex;flex-direction:column;justify-content:center}
+.center-controls{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;padding:8px}
+.center-controls button{min-width:140px}
 .vote-card h3{margin:0 0 8px}
 .progress{margin-top:12px;color:var(--muted)}
 .results{padding:8px}
-@media(max-width:900px){.grid{grid-template-columns:1fr;}.top-actions{flex-direction:column;align-items:flex-end}}
+@media(max-width:1100px){
+  .grid{grid-template-columns:1fr 1fr}
+  .container{padding:12px}
+}
+@media(max-width:820px){
+  .grid{grid-template-columns:1fr}
+  .top-actions{flex-direction:column;align-items:flex-end}
+  input[type=text],input#searchInput{width:100%}
+  header h1{font-size:18px}
+  .album-list .album .cover{width:56px;height:56px}
+  .suggestions .suggestion img{width:48px;height:48px}
+  .vote-card{min-height:100px;padding:12px}
+  .center-controls{flex-direction:row}
+  .center-controls button{min-width:100px}
+}
+
+/* Ensure share buttons wrap nicely on small screens */
+.share-area{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Album full-page mode tweaks */
+.album-mode .container{max-width:100%;padding:12px}
+.album-mode aside{display:none}
 
 /* Album full-page mode */
 .album-mode .container{max-width:1200px}
 .album-mode aside{display:none}
 .album-mode .grid{grid-template-columns:1fr}
 .album-mode header{margin-bottom:6px}
+
+/* hide search UI in album 'page' mode so only the back button / album view remains */
+.album-mode #searchBox,
+.album-mode #suggestions,
+.album-mode #searchResults,
+.album-mode #pagination {
+  display: none;
+}
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Spotify Battle (MVP)</title>
+  <title>Spotify Battle</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -24,13 +24,28 @@
     <div class="grid">
       <div>
         <div class="card">
-          <div id="searchBox" style="display:flex;align-items:center;gap:8px;position:relative">
-            <input id="searchInput" type="text" placeholder="Search album..." autocomplete="off" />
-            <button id="searchBtn">Search</button>
+          <div id="searchBox" style="display:flex;align-items:flex-start;gap:12px;position:relative">
+            <div style="flex:1">
+              <label style="display:block;font-size:12px;color:var(--muted)">Albums</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="searchInput" type="text" placeholder="Search album..." autocomplete="off" />
+                <button id="searchBtn">Search</button>
+              </div>
+              <div id="suggestions" class="suggestions" aria-hidden="true"></div>
+              <div id="searchResults" class="album-list" style="margin-top:12px"></div>
+              <div id="pagination" style="margin-top:8px;display:flex;gap:8px;align-items:center"></div>
+            </div>
+            <div style="width:320px">
+              <label style="display:block;font-size:12px;color:var(--muted)">Playlists</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="playlistSearchInput" type="text" placeholder="Search playlist..." autocomplete="off" style="flex:1" />
+                <button id="playlistSearchBtn">Search</button>
+              </div>
+              <div id="playlistSuggestions" class="suggestions" aria-hidden="true"></div>
+              <div id="playlistResults" class="album-list" style="margin-top:12px"></div>
+              <div id="playlistPagination" style="margin-top:8px;display:flex;gap:8px;align-items:center"></div>
+            </div>
           </div>
-          <div id="suggestions" class="suggestions" aria-hidden="true"></div>
-          <div id="searchResults" class="album-list" style="margin-top:12px"></div>
-          <div id="pagination" style="margin-top:8px;display:flex;gap:8px;align-items:center"></div>
         </div>
 
         <div id="albumSection" style="margin-top:14px"></div>
