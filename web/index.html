@@ -2,49 +2,51 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-</head>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Spotify Battle (MVP)</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <div class="container">
-  <header>
-    <h1>Spotify Battle</h1>
-    <div class="top-actions">
-      <div id="me" style="color:var(--muted)">Nicht angemeldet</div>
-      <button id="loginBtn">Login</button>
-      <button id="whoBtn" class="ghost">Aktualisieren</button>
-      <button id="logoutBtn" class="ghost">Logout</button>
-    </div>
-  </header>
-</head>
-<body>
-  <h1>Spotify Battle — MVP</h1>
-  <div class="grid">
-    <div>
-      <div class="card">
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="searchInput" type="text" placeholder="Album suchen..." />
-          <button id="searchBtn">Suchen</button>
+    <header>
+      <h1>Spotify Battle</h1>
+      <div class="top-actions">
+        <div style="display:flex;align-items:center;gap:8px">
+          <img id="meAvatar" src="" alt="avatar" style="width:36px;height:36px;border-radius:50%;display:none">
+          <div id="me" style="color:var(--muted)">Nicht angemeldet</div>
         </div>
-        <div id="searchResults" class="album-list" style="margin-top:12px"></div>
+        <button id="loginBtn">Login</button>
+        <button id="whoBtn" class="ghost">Aktualisieren</button>
+        <button id="logoutBtn" class="ghost">Logout</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <div id="searchBox" style="display:flex;align-items:center;gap:8px;position:relative">
+            <input id="searchInput" type="text" placeholder="Album suchen..." autocomplete="off" />
+            <button id="searchBtn">Suchen</button>
+          </div>
+          <div id="suggestions" class="suggestions" aria-hidden="true"></div>
+          <div id="searchResults" class="album-list" style="margin-top:12px"></div>
+          <div id="pagination" style="margin-top:8px;display:flex;gap:8px;align-items:center"></div>
+        </div>
+
+        <div id="albumSection" style="margin-top:14px"></div>
+        <div id="votingSection" style="margin-top:14px"></div>
       </div>
 
-      <div id="albumSection" style="margin-top:14px"></div>
-      <div id="votingSection" style="margin-top:14px"></div>
+      <aside>
+        <div class="card">
+          <h3>Tipps</h3>
+          <p class="muted">Wähle zwei Songs, um sie zu vergleichen. Ergebnisse werden im LocalStorage gespeichert.</p>
+          <div style="margin-top:10px"><button id="exportAll" class="ghost">Ergebnisse exportieren</button></div>
+        </div>
+      </aside>
     </div>
 
-    <aside>
-      <div class="card">
-        <h3>Tipps</h3>
-        <p class="muted">Wähle zwei Songs, um sie zu vergleichen. Ergebnisse werden im LocalStorage gespeichert.</p>
-        <div style="margin-top:10px"><button id="exportAll" class="ghost">Ergebnisse exportieren</button></div>
-      </div>
-    </aside>
-  </div>
-
-  <script src="/app.js"></script>
+    <script src="/app.js"></script>
   </div>
 </body>
 </html>

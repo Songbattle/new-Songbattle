@@ -132,8 +132,8 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if spotifyClientID == "" || spotifyClientSecret == "" {
-        // mock mode
-        writeJSON(w, http.StatusOK, map[string]interface{}{"id": "mock-user", "display_name": "Mock User"})
+        // mock mode with avatar
+        writeJSON(w, http.StatusOK, map[string]interface{}{"id": "mock-user", "display_name": "Mock User", "images": []map[string]string{{"url": "https://picsum.photos/seed/mock-user/48"}}})
         return
     }
 
@@ -157,19 +157,94 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {
+    // If client supplies a full `next` or `previous` URL (Spotify absolute URL), proxy it server-side
+    if nxt := r.URL.Query().Get("next"); nxt != "" {
+        req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, nxt, nil)
+        if c, err := r.Cookie("access_token"); err == nil {
+            req.Header.Set("Authorization", "Bearer "+c.Value)
+        }
+        resp, err := http.DefaultClient.Do(req)
+        if err != nil {
+            writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+            return
+        }
+        defer resp.Body.Close()
+        body, _ := io.ReadAll(resp.Body)
+        w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+        w.WriteHeader(resp.StatusCode)
+        w.Write(body)
+        return
+    }
+    if prev := r.URL.Query().Get("previous"); prev != "" {
+        req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, prev, nil)
+        if c, err := r.Cookie("access_token"); err == nil {
+            req.Header.Set("Authorization", "Bearer "+c.Value)
+        }
+        resp, err := http.DefaultClient.Do(req)
+        if err != nil {
+            writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+            return
+        }
+        defer resp.Body.Close()
+        body, _ := io.ReadAll(resp.Body)
+        w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+        w.WriteHeader(resp.StatusCode)
+        w.Write(body)
+        return
+    }
     q := r.URL.Query().Get("album")
     if q == "" {
         writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing album query"})
         return
     }
+    // support pagination params
+    offset := 0
+    limit := 10
+    if of := r.URL.Query().Get("offset"); of != "" {
+        fmt.Sscanf(of, "%d", &offset)
+    }
+    if lm := r.URL.Query().Get("limit"); lm != "" {
+        fmt.Sscanf(lm, "%d", &limit)
+    }
+
     if spotifyClientID == "" || spotifyClientSecret == "" {
-        // return mock albums
-        resp := map[string]interface{}{"albums": map[string]interface{}{"items": []map[string]interface{}{}}}
-        items := []map[string]interface{}{
-            {"id": "alb1", "name": q + " - Best Of", "artists": []map[string]string{{"name": "Mock Artist"}}},
-            {"id": "alb2", "name": q + " (Deluxe)", "artists": []map[string]string{{"name": "Mock Artist 2"}}},
+        // return mock albums with paging and images
+        total := 50
+        items := []map[string]interface{}{}
+        start := offset + 1
+        end := offset + limit
+        if end > total {
+            end = total
         }
-        resp["albums"].(map[string]interface{})["items"] = items
+        for i := start; i <= end; i++ {
+            id := fmt.Sprintf("alb%d", i)
+            // mock total_tracks between 8 and 15
+            tt := 8 + ((i-start)%8)
+            items = append(items, map[string]interface{}{"id": id, "name": fmt.Sprintf("%s — Album %d", q, i), "artists": []map[string]string{{"name": "Mock Artist"}}, "images": []map[string]string{{"url": fmt.Sprintf("https://picsum.photos/seed/%s-%d/80", q, i)}}, "total_tracks": tt})
+        }
+        // compute next/previous as relative API URLs
+        var nextURL *string = nil
+        var prevURL *string = nil
+        if offset+limit < total {
+            n := fmt.Sprintf("/api/search?album=%s&offset=%d&limit=%d", urlEncode(q), offset+limit, limit)
+            nextURL = &n
+        }
+        if offset-limit >= 0 {
+            p := fmt.Sprintf("/api/search?album=%s&offset=%d&limit=%d", urlEncode(q), offset-limit, limit)
+            prevURL = &p
+        }
+        albums := map[string]interface{}{"items": items, "total": total, "limit": limit, "offset": offset}
+        if nextURL != nil {
+            albums["next"] = *nextURL
+        } else {
+            albums["next"] = nil
+        }
+        if prevURL != nil {
+            albums["previous"] = *prevURL
+        } else {
+            albums["previous"] = nil
+        }
+        resp := map[string]interface{}{"albums": albums}
         writeJSON(w, http.StatusOK, resp)
         return
     }

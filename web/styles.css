@@ -13,9 +13,24 @@ input[type=text],input#searchInput{padding:10px 12px;border-radius:8px;border:1p
 .grid{display:grid;grid-template-columns:1fr 320px;gap:18px}
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
 .album-list .album{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.album-list .album .cover{width:64px;height:64px;border-radius:6px;flex:0 0 64px;margin-right:10px;object-fit:cover}
+.album-list .album .meta{flex:1}
+.album-list .album .muted{color:var(--muted);font-size:13px}
+.top-actions img{border:2px solid rgba(255,255,255,0.03)}
+
+/* suggestions */
+.suggestions{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:6px;margin-top:8px;max-height:280px;overflow:auto}
+.suggestions .suggestion{display:flex;gap:8px;align-items:center;padding:8px;border-radius:6px;cursor:pointer}
+.suggestions .suggestion:hover{background:rgba(255,255,255,0.02)}
+.suggestions .suggestion img{width:48px;height:48px;border-radius:6px;object-fit:cover}
+.suggestions .suggestion .meta{font-size:14px}
+.suggestions .empty{color:var(--muted);padding:8px}
+.suggestions .suggestion .openBtn{margin-left:8px;padding:6px 8px;border-radius:6px}
 .tracks .track{padding:8px;border-bottom:1px dashed rgba(255,255,255,0.02)}
 .voting{display:flex;gap:12px}
 .vote-card{flex:1;padding:16px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);text-align:center}
+.center-controls{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;padding:8px}
+.center-controls button{min-width:120px}
 .vote-card h3{margin:0 0 8px}
 .progress{margin-top:12px;color:var(--muted)}
 .results{padding:8px}
