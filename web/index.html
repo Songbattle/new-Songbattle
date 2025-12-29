@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -11,12 +11,12 @@
     <header>
       <h1>Spotify Battle</h1>
       <div class="top-actions">
-        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
           <img id="meAvatar" src="" alt="avatar" style="width:36px;height:36px;border-radius:50%;display:none">
-          <div id="me" style="color:var(--muted)">Nicht angemeldet</div>
+          <div id="me" style="color:var(--muted)">Not logged in</div>
         </div>
         <button id="loginBtn">Login</button>
-        <button id="whoBtn" class="ghost">Aktualisieren</button>
+        <button id="whoBtn" class="ghost">Refresh</button>
         <button id="logoutBtn" class="ghost">Logout</button>
       </div>
     </header>
@@ -25,8 +25,8 @@
       <div>
         <div class="card">
           <div id="searchBox" style="display:flex;align-items:center;gap:8px;position:relative">
-            <input id="searchInput" type="text" placeholder="Album suchen..." autocomplete="off" />
-            <button id="searchBtn">Suchen</button>
+            <input id="searchInput" type="text" placeholder="Search album..." autocomplete="off" />
+            <button id="searchBtn">Search</button>
           </div>
           <div id="suggestions" class="suggestions" aria-hidden="true"></div>
           <div id="searchResults" class="album-list" style="margin-top:12px"></div>
@@ -39,9 +39,9 @@
 
       <aside>
         <div class="card">
-          <h3>Tipps</h3>
-          <p class="muted">Wähle zwei Songs, um sie zu vergleichen. Ergebnisse werden im LocalStorage gespeichert.</p>
-          <div style="margin-top:10px"><button id="exportAll" class="ghost">Ergebnisse exportieren</button></div>
+          <h3>Tips</h3>
+          <p class="muted">Select two songs to compare. Results are saved in LocalStorage.</p>
+          <div style="margin-top:10px"><button id="exportAll" class="ghost">Export results</button></div>
         </div>
       </aside>
     </div>

@@ -52,7 +52,7 @@ let removedSearchHTML = null;
 
 document.getElementById('searchBtn').addEventListener('click', async ()=>{
   const q = document.getElementById('searchInput').value.trim();
-  if(!q) return alert('Bitte Suchbegriff eingeben');
+  if(!q) return alert('Please enter a search term');
   // clear suggestions preview when user starts an explicit search
   suggestionsEl.innerHTML = '';
   suggestionsEl.setAttribute('aria-hidden','true');
@@ -69,12 +69,12 @@ async function renderSuggestions(q){
   if(!q){ suggestionsEl.innerHTML = ''; suggestionsEl.setAttribute('aria-hidden','true'); return }
   const res = await api(`/api/search?album=${encodeURIComponent(q)}&offset=0&limit=5`);
   const items = (res.albums?.items || []).filter(it => !(it && (it.total_tracks === 1 || it.total_tracks == '1')));
-  if(!items || items.length === 0){ suggestionsEl.innerHTML = '<div class="empty">Keine Vorschläge</div>'; suggestionsEl.setAttribute('aria-hidden','false'); return }
+  if(!items || items.length === 0){ suggestionsEl.innerHTML = '<div class="empty">No suggestions</div>'; suggestionsEl.setAttribute('aria-hidden','false'); return }
   suggestionsEl.innerHTML = items.map(a=>{
     const img = a.images?.[0]?.url || `https://picsum.photos/seed/${a.id}/48`;
     const artists = a.artists?.map(x=>x.name).join(', ');
     // include data attrs for id and name; Open button will trigger direct album open
-    return `<div class="suggestion" data-id="${a.id}" data-name="${escapeHtml(a.name)}"><img src="${img}" alt="cover"><div class="meta"><strong>${escapeHtml(a.name)}</strong><div class="muted">${escapeHtml(artists||'')}</div></div><div><button class="openBtn ghost">Öffnen</button></div></div>`;
+    return `<div class="suggestion" data-id="${a.id}" data-name="${escapeHtml(a.name)}"><img src="${img}" alt="cover"><div class="meta"><strong>${escapeHtml(a.name)}</strong><div class="muted">${escapeHtml(artists||'')}</div></div><div><button class="openBtn ghost">Open</button></div></div>`;
   }).join('');
   suggestionsEl.setAttribute('aria-hidden','false');
   // attach handlers: click on suggestion fills input (no auto-search), open button opens album
@@ -167,7 +167,7 @@ async function fetchSearch(q, pageOrUrl){
     const div = document.createElement('div');
     div.className='album';
     const img = a.images?.[0]?.url || `https://picsum.photos/seed/${a.id}/80`;
-    div.innerHTML = `<div style="display:flex;align-items:center"><img class="cover" src="${img}" alt="cover"><div class="meta"><strong>${a.name}</strong><div class="muted">${a.artists?.map(x=>x.name).join(', ')}</div></div></div><div><button data-id="${a.id}" class="ghost">Auswählen</button></div>`;
+    div.innerHTML = `<div style="display:flex;align-items:center"><img class="cover" src="${img}" alt="cover"><div class="meta"><strong>${a.name}</strong><div class="muted">${a.artists?.map(x=>x.name).join(', ')}</div></div></div><div><button data-id="${a.id}" class="ghost">Select</button></div>`;
     const btn = div.querySelector('button');
     btn.addEventListener('click',()=>selectAlbum(a));
     container.appendChild(div);
@@ -178,15 +178,15 @@ async function fetchSearch(q, pageOrUrl){
 function renderPagination(){
   const pag = document.getElementById('pagination');
   pag.innerHTML = '';
-  const prev = document.createElement('button'); prev.className='ghost'; prev.innerText='Zurück'; prev.disabled = (lastPage <= 0 || lastTotal <= 0);
-  const next = document.createElement('button'); next.className='ghost'; next.innerText='Weiter'; next.disabled = (lastTotal <= 0 || (lastPage+1)*PAGE_LIMIT >= lastTotal);
+  const prev = document.createElement('button'); prev.className='ghost'; prev.innerText='Previous'; prev.disabled = (lastPage <= 0 || lastTotal <= 0);
+  const next = document.createElement('button'); next.className='ghost'; next.innerText='Next'; next.disabled = (lastTotal <= 0 || (lastPage+1)*PAGE_LIMIT >= lastTotal);
   const info = document.createElement('div'); info.style.color='var(--muted)';
   if(lastTotal <= 0){
-    info.innerText = `0 von 0`;
+    info.innerText = `0 of 0`;
   } else {
     const from = Math.min(lastOffset+1, lastTotal);
     const to = Math.min(lastOffset+PAGE_LIMIT, lastTotal);
-    info.innerText = `${from}–${to} von ${lastTotal}`;
+    info.innerText = `${from}–${to} of ${lastTotal}`;
   }
   prev.addEventListener('click', async ()=>{ 
     if(lastPrev) { 
@@ -225,7 +225,7 @@ async function selectAlbum(a){
   // switch to album 'page' mode (hide aside, expand)
   document.body.classList.add('album-mode');
   history.pushState({albumId:a.id}, '', `#album-${a.id}`);
-  document.getElementById('albumSection').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">${a.name}</h2><div><button id="backAlbum" class="ghost">Zurück zur Suche</button></div></div><div id="tracks"></div>`;
+  document.getElementById('albumSection').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">${a.name}</h2><div><button id="backAlbum" class="ghost">Back to Search</button></div></div><div id="tracks"></div>`;
   document.getElementById('backAlbum').addEventListener('click', ()=>{
     restoreFromAlbum(a.id);
   });
@@ -234,16 +234,16 @@ async function selectAlbum(a){
   const tdiv = document.getElementById('tracks');
   tdiv.className='card tracks';
   // show only a summary and a button to reveal the full tracklist
-  tdiv.innerHTML = `<div>${tracks.length} Tracks</div><div style="margin-top:8px"><button id="showTracks" class="ghost">Tracks anzeigen</button></div><div id="fullTracks" style="margin-top:8px;display:none"></div>`;
+  tdiv.innerHTML = `<div>${tracks.length} Tracks</div><div style="margin-top:8px"><button id="showTracks" class="ghost">Show tracks</button></div><div id="fullTracks" style="margin-top:8px;display:none"></div>`;
   document.getElementById('showTracks').addEventListener('click', (ev)=>{
     const full = document.getElementById('fullTracks');
     if(full.style.display === 'none'){
       full.style.display = 'block';
       full.innerHTML = tracks.map(t=>`<div class="track">${t.name}</div>`).join('');
-      ev.target.innerText = 'Tracks verbergen';
+      ev.target.innerText = 'Hide tracks';
     } else {
       full.style.display = 'none';
-      ev.target.innerText = 'Tracks anzeigen';
+      ev.target.innerText = 'Show tracks';
     }
   });
   // prepare voting (hidden/available regardless of showing tracklist)
@@ -251,7 +251,7 @@ async function selectAlbum(a){
 }
 
 function startVoting(){
-  if(tracks.length<2){ document.getElementById('votingSection').innerText='Nicht genug Tracks.'; return }
+  if(tracks.length<2){ document.getElementById('votingSection').innerText='Not enough tracks.'; return }
   // generate unique pairs (simple round-robin)
   const pairs = [];
   for(let i=0;i<tracks.length;i++)for(let j=i+1;j<tracks.length;j++)pairs.push([tracks[i],tracks[j]]);
@@ -273,20 +273,20 @@ function renderNextPair(){
   const a = tracks.find(t=>t.id===aId)||{id:aId,name:aId};
   const b = tracks.find(t=>t.id===bId)||{id:bId,name:bId};
   const out = document.getElementById('votingSection');
-  const bothLabel = `Mag beide`;
-  const noneLabel = `Keine Ahnung`;
+  const bothLabel = `Both`;
+  const noneLabel = `No opinion`;
   out.innerHTML = `
     <div class="voting">
-      <div class="vote-card"><h3>${a.name}</h3><div style="margin-top:10px"><button id="voteA">Wähle links</button></div></div>
+      <div class="vote-card"><h3>${a.name}</h3><div style="margin-top:10px"><button id="voteA">Choose left</button></div></div>
       <div class="center-controls"><button id="voteBoth" class="ghost">${bothLabel}</button><button id="voteNone" class="ghost">${noneLabel}</button></div>
-      <div class="vote-card"><h3>${b.name}</h3><div style="margin-top:10px"><button id="voteB">Wähle rechts</button></div></div>
+      <div class="vote-card"><h3>${b.name}</h3><div style="margin-top:10px"><button id="voteB">Choose right</button></div></div>
     </div>
     <div id="progress" class="progress"></div>`;
   document.getElementById('voteA').addEventListener('click',()=>recordVote(a.id));
   document.getElementById('voteB').addEventListener('click',()=>recordVote(b.id));
   document.getElementById('voteBoth').addEventListener('click',()=>recordVote([a.id,b.id]));
   document.getElementById('voteNone').addEventListener('click',()=>recordVote(null));
-  document.getElementById('progress').innerText = `Paar ${idx+1}/${pairs.length}`;
+  document.getElementById('progress').innerText = `Pair ${idx+1}/${pairs.length}`;
 }
 
 function recordVote(winnerId){
@@ -309,7 +309,7 @@ function showResults(){
   const scores = JSON.parse(localStorage.getItem('scores')||'{}');
   const ranked = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
   const out = document.getElementById('votingSection');
-  out.innerHTML = '<div class="card results"><h3>Ergebnisse</h3>' + ranked.map(([id,sc],i)=>{const t=tracks.find(tt=>tt.id===id);return `<div>${i+1}. ${t? t.name : id} — ${sc} Punkte</div>`}).join('') + '</div><div style="margin-top:8px"><button id="export">Export JSON</button></div>';
+  out.innerHTML = '<div class="card results"><h3>Results</h3>' + ranked.map(([id,sc],i)=>{const t=tracks.find(tt=>tt.id===id);return `<div>${i+1}. ${t? t.name : id} — ${sc} points</div>`}).join('') + '</div><div style="margin-top:8px"><button id="export">Export JSON</button></div>';
   document.getElementById('export').addEventListener('click',()=>{
     const blob = new Blob([JSON.stringify({tracks, scores},null,2)],{type:'application/json'});
     const url = URL.createObjectURL(blob);

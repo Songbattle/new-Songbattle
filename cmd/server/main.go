@@ -24,7 +24,7 @@ func main() {
     fs := http.FileServer(http.Dir("./web"))
     http.Handle("/", fs)
 
-    log.Printf("Server startet auf %s", addr)
+    log.Printf("Server starting on %s", addr)
     if err := http.ListenAndServe(addr, nil); err != nil {
         log.Fatal(err)
     }
