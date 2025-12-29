@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spotify Battle (MVP)</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;padding:16px}
+    .row{display:flex;gap:12px}
+    .card{flex:1;padding:12px;border:1px solid #ddd;border-radius:6px}
+    button{padding:8px 12px}
+  </style>
+</head>
+<body>
+  <h1>Spotify Battle — MVP</h1>
+  <div id="auth">
+    <button id="loginBtn">Login (Spotify / Mock)</button>
+    <button id="whoBtn">Me</button>
+    <div id="me"></div>
+  </div>
+
+  <hr/>
+  <div>
+    <input id="searchInput" placeholder="Album suchen..." />
+    <button id="searchBtn">Suchen</button>
+    <div id="searchResults"></div>
+  </div>
+
+  <hr/>
+  <div id="albumSection"></div>
+
+  <hr/>
+  <div id="votingSection"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
