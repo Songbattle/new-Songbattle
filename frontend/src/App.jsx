@@ -104,12 +104,12 @@ function App() {
     // Auto-start voting if enough tracks
     if (trackList.length >= 2) {
       setTimeout(() => {
-        startVotingWithTracks(trackList)
+        startVotingWithTracks(trackList, album)
       }, 100)
     }
   }
 
-  const startVotingWithTracks = (trackList) => {
+  const startVotingWithTracks = (trackList, albumData) => {
     if (trackList.length < 2) return
     
     // Use the old efficient merge-sort algorithm with equal-linking
@@ -155,7 +155,7 @@ function App() {
     localStorage.setItem('scores', JSON.stringify({}))
     
     // Store whether this is a playlist battle (to show covers)
-    localStorage.setItem('isPlaylistBattle', album?.type === 'playlist' ? 'true' : 'false')
+    localStorage.setItem('isPlaylistBattle', albumData?.type === 'playlist' ? 'true' : 'false')
     
     setVotingActive(true)
     setResultsActive(false)
@@ -184,7 +184,7 @@ function App() {
 
         <div className="grid">
           <div>
-            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} />}
+            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} user={user} />}
 
             {currentAlbum && (
               <AlbumView

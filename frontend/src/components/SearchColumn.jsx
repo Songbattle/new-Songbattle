@@ -3,7 +3,7 @@ import api from '../utils/api'
 
 const PAGE_LIMIT = 10
 
-function SearchColumn({ type, onSelect }) {
+function SearchColumn({ type, onSelect, disabled, myItems }) {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [results, setResults] = useState([])
@@ -19,7 +19,13 @@ function SearchColumn({ type, onSelect }) {
   const label = isAlbum ? 'Albums' : 'Playlists'
   const placeholder = isAlbum ? 'Search album...' : 'Search playlist...'
 
+  // Show my items when available and no search results yet
+  const showMyItems = myItems && myItems.length > 0 && results.length === 0
+  const myItemsLabel = isAlbum ? 'Your Saved Albums' : 'Your Playlists'
+
   const handleInputChange = (e) => {
+    if (disabled) return
+    
     const val = e.target.value
     setQuery(val)
 
@@ -132,27 +138,40 @@ function SearchColumn({ type, onSelect }) {
     }
   }
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (suggestions.length > 0 && !e.target.closest('.search-input-wrapper')) {
+        setSuggestions([])
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [suggestions.length])
+
   return (
     <div style={{ flex: 1 }}>
       <label style={{ display: 'block', fontSize: '12px', color: 'var(--muted)' }}>
         {label}
       </label>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <input
-          type="text"
-          placeholder={placeholder}
-          value={query}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          autoComplete="off"
-        />
-        <button onClick={handleSearch} disabled={loading}>
-          Search
-        </button>
-      </div>
+      <div className="search-input-wrapper" style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder={placeholder}
+            value={query}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            autoComplete="off"
+            disabled={disabled}
+            style={disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+          />
+          <button onClick={handleSearch} disabled={loading || disabled}>
+            Search
+          </button>
+        </div>
 
-      {suggestions.length > 0 && (
-        <div className="suggestions">
+        {suggestions.length > 0 && (
+          <div className="suggestions" style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 1000 }}>
           {suggestions.filter(Boolean).map((item) => {
             if (!item || !item.id) return null
             const img =
@@ -186,6 +205,47 @@ function SearchColumn({ type, onSelect }) {
               </div>
             )
           })}
+        </div>
+      )}
+      </div>
+
+      {showMyItems && (
+        <div style={{ marginTop: '12px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>
+            {myItemsLabel}
+          </div>
+          <div className="album-list">
+            {myItems.map((item) => {
+              if (!item || !item.id) return null
+              const img =
+                item.images?.[0]?.url ||
+                `https://picsum.photos/seed/${item.id}/64`
+              const subtitle = isAlbum
+                ? item.artists?.map((a) => a.name).join(', ') || ''
+                : item.owner?.display_name || ''
+              return (
+                <div key={item.id} className="album">
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <img className="cover" src={img} alt="cover" />
+                    <div className="meta">
+                      <strong>{item.name}</strong>
+                      <div className="muted">{subtitle}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <button
+                      className="ghost"
+                      onClick={() =>
+                        onSelect({ ...item, type: isAlbum ? 'album' : 'playlist' })
+                      }
+                    >
+                      Select
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

@@ -145,17 +145,14 @@ input[type='text']::placeholder {
 }
 
 .suggestions {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02),
-    rgba(255, 255, 255, 0.01)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: #1a1d29;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   padding: 8px;
   margin-top: 10px;
   max-height: 320px;
   overflow: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .suggestions .suggestion {
