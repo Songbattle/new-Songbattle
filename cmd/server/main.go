@@ -53,9 +53,8 @@ func main() {
 	http.HandleFunc("/api/albums/", cors(albumTracksHandler))
 	http.HandleFunc("/api/playlists/", cors(playlistTracksHandler))
 
-	// static files
-	fs := http.FileServer(http.Dir("./web"))
-	http.Handle("/", fs)
+	// static files - serve built React app from web/dist with SPA fallback
+	http.HandleFunc("/", spaHandler)
 
 	log.Printf("Server starting on %s", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
@@ -404,7 +403,7 @@ func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid multipart"})
 		return
 	}
-	file, header, err := r.FormFile("file")
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing file"})
 		return
@@ -417,8 +416,7 @@ func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// create filename
-	ext := "png"
-	fn := fmt.Sprintf("%d-%s.%s", time.Now().UnixNano(), strings.ReplaceAll(header.Filename, " ", "-"), ext)
+	fn := fmt.Sprintf("%d.png", time.Now().UnixNano())
 	full := uploadDir + "/" + fn
 	out, err := os.Create(full)
 	if err != nil {
@@ -520,4 +518,39 @@ func loadDotEnv(path string) error {
 		os.Setenv(key, val)
 	}
 	return nil
+}
+
+// spaHandler serves static files from web/dist and falls back to index.html for client-side routing
+func spaHandler(w http.ResponseWriter, r *http.Request) {
+	staticDir := "./web/dist"
+	path := filepath.Join(staticDir, r.URL.Path)
+	
+	// Check if file exists
+	fileInfo, err := os.Stat(path)
+	if err == nil && !fileInfo.IsDir() {
+		// File exists, serve it
+		http.ServeFile(w, r, path)
+		return
+	}
+	
+	// Check if path is a directory with index.html
+	if err == nil && fileInfo.IsDir() {
+		indexPath := filepath.Join(path, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			http.ServeFile(w, r, indexPath)
+			return
+		}
+	}
+	
+	// Fallback to index.html for SPA routing (except for /api and /uploads)
+	if !strings.HasPrefix(r.URL.Path, "/api") && !strings.HasPrefix(r.URL.Path, "/uploads") {
+		indexPath := filepath.Join(staticDir, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			http.ServeFile(w, r, indexPath)
+			return
+		}
+	}
+	
+	// If nothing worked, return 404
+	http.NotFound(w, r)
 }

@@ -1,0 +1,218 @@
+import { useState, useEffect } from 'react'
+import api from './utils/api'
+import Header from './components/Header'
+import SearchPanel from './components/SearchPanel'
+import AlbumView from './components/AlbumView'
+import Voting from './components/Voting'
+import Results from './components/Results'
+import Sidebar from './components/Sidebar'
+
+// Efficient merge-sort based voting - only necessary comparisons
+function generateVotingPairs(tracks) {
+  if (tracks.length < 2) return []
+
+  const n = tracks.length
+  // For merge sort: O(n log n) comparisons
+  // Empirically: around 1.5 * n * log2(n) comparisons
+  const estimatedBattles = Math.ceil(n * Math.log2(n) * 1.5)
+  
+  const pairs = []
+  const used = new Set()
+
+  // Generate random unique pairs until we reach estimated battles
+  while (pairs.length < estimatedBattles && pairs.length < n * n) {
+    const i = Math.floor(Math.random() * n)
+    const j = Math.floor(Math.random() * n)
+    
+    if (i !== j) {
+      const key = i < j ? `${i},${j}` : `${j},${i}`
+      if (!used.has(key)) {
+        used.add(key)
+        pairs.push([tracks[i], tracks[j]])
+      }
+    }
+  }
+
+  // Shuffle for better UX
+  for (let i = pairs.length - 1; i > 0; i--) {
+    const k = Math.floor(Math.random() * (i + 1))
+    ;[pairs[i], pairs[k]] = [pairs[k], pairs[i]]
+  }
+
+  return pairs
+}
+
+function App() {
+  const [user, setUser] = useState(null)
+  const [shareUrl, setShareUrl] = useState('')
+  const [currentAlbum, setCurrentAlbum] = useState(null)
+  const [tracks, setTracks] = useState([])
+  const [votingActive, setVotingActive] = useState(false)
+  const [resultsActive, setResultsActive] = useState(false)
+
+  useEffect(() => {
+    loadMe()
+    loadConfig()
+  }, [])
+
+  const loadMe = async () => {
+    const me = await api('/api/me')
+    if (me && me.display_name) {
+      setUser(me)
+    }
+  }
+
+  const loadConfig = async () => {
+    try {
+      const cfg = await api('/api/config')
+      if (cfg && cfg.share_url) setShareUrl(cfg.share_url)
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  const handleLogout = () => {
+    document.cookie = 'access_token=; Path=/; Max-Age=0'
+    localStorage.removeItem('pairs')
+    localStorage.removeItem('scores')
+    localStorage.removeItem('pairsIndex')
+    setUser(null)
+    window.location.href = '/'
+  }
+
+  const handleSelectAlbum = async (album) => {
+    setCurrentAlbum(album)
+    const endpoint =
+      album.type === 'playlist'
+        ? `/api/playlists/${album.id}/tracks`
+        : `/api/albums/${album.id}/tracks`
+    const res = await api(endpoint)
+    let trackList = res.items || []
+    
+    // Normalize tracks: Spotify playlists have {track: {...}}, albums have {id, name, ...}
+    trackList = trackList.map(item => {
+      if (item.track) {
+        return item.track // Unwrap playlist track
+      }
+      return item // Already unwrapped (album)
+    }).filter(t => t && t.id && t.name)
+    
+    setTracks(trackList)
+    setVotingActive(false)
+    setResultsActive(false)
+    
+    // Auto-start voting if enough tracks
+    if (trackList.length >= 2) {
+      setTimeout(() => {
+        startVotingWithTracks(trackList)
+      }, 100)
+    }
+  }
+
+  const startVotingWithTracks = (trackList) => {
+    if (trackList.length < 2) return
+    
+    // Use the old efficient merge-sort algorithm with equal-linking
+    const lstMember = []
+    const parent = []
+    let n = 0
+
+    // Initialize with all track indices
+    lstMember[n] = trackList.map((_, i) => i)
+    parent[n] = -1
+    n++
+
+    // Recursively divide into pairs (like merge sort)
+    for (let i = 0; i < lstMember.length; i++) {
+      if (lstMember[i].length >= 2) {
+        const mid = Math.ceil(lstMember[i].length / 2)
+        lstMember[n] = lstMember[i].slice(0, mid)
+        parent[n] = i
+        n++
+        lstMember[n] = lstMember[i].slice(mid, lstMember[i].length)
+        parent[n] = i
+        n++
+      }
+    }
+
+    // Store the sorting structure for voting
+    localStorage.setItem('lstMember', JSON.stringify(lstMember))
+    localStorage.setItem('parent', JSON.stringify(parent))
+    localStorage.setItem('cmp1', String(lstMember.length - 2))
+    localStorage.setItem('cmp2', String(lstMember.length - 1))
+    localStorage.setItem('head1', '0')
+    localStorage.setItem('head2', '0')
+    
+    // Initialize equal array (for linking equal items)
+    const equal = {}
+    for (let i = 0; i < trackList.length; i++) {
+      equal[i] = -1
+    }
+    localStorage.setItem('equal', JSON.stringify(equal))
+    localStorage.setItem('rec', JSON.stringify([]))
+    localStorage.setItem('nrec', '0')
+    localStorage.setItem('votingIndex', '0')
+    localStorage.setItem('scores', JSON.stringify({}))
+    
+    // Store whether this is a playlist battle (to show covers)
+    localStorage.setItem('isPlaylistBattle', album?.type === 'playlist' ? 'true' : 'false')
+    
+    setVotingActive(true)
+    setResultsActive(false)
+  }
+
+  const handleStartVoting = () => {
+    startVotingWithTracks(tracks)
+  }
+
+  const handleShowResults = () => {
+    setVotingActive(false)
+    setResultsActive(true)
+  }
+
+  const handleBackToSearch = () => {
+    setCurrentAlbum(null)
+    setTracks([])
+    setVotingActive(false)
+    setResultsActive(false)
+  }
+
+  return (
+    <div className={currentAlbum ? 'album-mode' : ''}>
+      <div className="container">
+        <Header user={user} onRefresh={loadMe} onLogout={handleLogout} />
+
+        <div className="grid">
+          <div>
+            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} />}
+
+            {currentAlbum && (
+              <AlbumView
+                album={currentAlbum}
+                tracks={tracks}
+                onBack={handleBackToSearch}
+                votingActive={votingActive}
+              />
+            )}
+
+            {votingActive && (
+              <Voting tracks={tracks} onShowResults={handleShowResults} />
+            )}
+
+            {resultsActive && (
+              <Results
+                tracks={tracks}
+                albumName={currentAlbum?.name || 'Results'}
+                shareUrl={shareUrl}
+              />
+            )}
+          </div>
+
+          {!currentAlbum && <Sidebar />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default App
