@@ -57,6 +57,10 @@ button {
   min-height: 44px;
   min-width: 44px;
   font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 button.ghost {
