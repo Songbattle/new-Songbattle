@@ -366,6 +366,16 @@ input[type='text']::placeholder {
   font-size: 13px;
 }
 
+.footer-disclaimer {
+  width: 100%;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Privacy Page */
 .privacy-page {
   min-height: 100vh;
