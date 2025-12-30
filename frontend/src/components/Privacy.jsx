@@ -70,6 +70,24 @@ function Privacy() {
         </section>
 
         <section className="privacy-section">
+          <h2>Cloudflare</h2>
+          <p>
+            This application may use Cloudflare's services for security, performance, 
+            and DDoS protection. Cloudflare may process your IP address and other 
+            technical data. Please refer to{' '}
+            <a 
+              href="https://www.cloudflare.com/privacypolicy/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="privacy-link"
+            >
+              Cloudflare's Privacy Policy
+            </a>{' '}
+            for more information about their data handling practices.
+          </p>
+        </section>
+
+        <section className="privacy-section">
           <h2>Contact</h2>
           <p>
             If you have any questions about this Privacy Policy, please visit our{' '}

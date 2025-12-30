@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   spotify-battle:
+    build: .
     image: ghcr.io/t0biii/spotify-battle:latest
     container_name: spotify-battle
     ports:
