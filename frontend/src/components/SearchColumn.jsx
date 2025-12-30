@@ -47,11 +47,10 @@ function SearchColumn({ type, onSelect, disabled, myItems }) {
     )
     const coll = res.playlists || res.albums || {}
     let items = (coll.items || []).filter(Boolean)
-    if (isAlbum) {
-      items = items.filter(
-        (it) => !(it && (it.total_tracks === 1 || it.total_tracks == '1'))
-      )
-    }
+    // Filter out items with less than 2 tracks
+    items = items.filter(
+      (it) => it && it.total_tracks && parseInt(it.total_tracks) >= 2
+    )
     setSuggestions(items.slice(0, 5))
   }
 
@@ -84,11 +83,10 @@ function SearchColumn({ type, onSelect, disabled, myItems }) {
       const res = await api(url)
       const coll = res.playlists || res.albums || {}
       let items = (coll.items || []).filter(Boolean)
-      if (isAlbum) {
-        items = items.filter(
-          (it) => !(it && (it.total_tracks === 1 || it.total_tracks == '1'))
-        )
-      }
+      // Filter out items with less than 2 tracks
+      items = items.filter(
+        (it) => it && it.total_tracks && parseInt(it.total_tracks) >= 2
+      )
       setResults(items)
       setTotal(coll.total || items.length)
       setOffset(coll.offset || 0)
