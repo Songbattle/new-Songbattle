@@ -628,24 +628,27 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	textColor := color.RGBA{255, 255, 255, 255}
 	y := titleHeight - 70
 	
-	// Title
+	// Title (centered)
 	addLabel(img, width/2-len(req.Title)*4, y, req.Title, textColor)
 	
-	// Items
-	y = titleHeight + coverSize + padding*4
+	// Items (centered)
+	y = titleHeight + coverSize + padding*2
 	for _, item := range req.Items {
-		text := fmt.Sprintf("%d. %s — %d points", item.Rank, item.Name, item.Score)
+		text := fmt.Sprintf("%d. %s %d points", item.Rank, item.Name, item.Score)
 		if len(text) > 90 {
 			text = text[:87] + "..."
 		}
-		addLabel(img, padding, y, text, textColor)
+		// Center the text
+		textWidth := len(text) * 7 // basicfont.Face7x13 is ~7px wide per char
+		addLabel(img, width/2-textWidth/2, y, text, textColor)
 		y += lineHeight
 	}
 	
-	// Footer (share URL)
+	// Footer (share URL, centered)
 	if req.ShareURL != "" {
 		y += padding
-		addLabel(img, padding, y, req.ShareURL, color.RGBA{150, 150, 150, 255})
+		urlWidth := len(req.ShareURL) * 7
+		addLabel(img, width/2-urlWidth/2, y, req.ShareURL, color.RGBA{150, 150, 150, 255})
 	}
 	
 	// Save to file
