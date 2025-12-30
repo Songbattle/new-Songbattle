@@ -590,6 +590,7 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	titleHeight := 90
 	coverSize := 120
 	padding := 25
+	coverPadding := 10  // Reduced padding between title and cover
 	footerHeight := 60
 	
 	itemsHeight := len(req.Items) * lineHeight
@@ -615,7 +616,7 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 						for x := 0; x < coverSize; x++ {
 							srcX := srcBounds.Min.X + (x * srcBounds.Dx() / coverSize)
 							srcY := srcBounds.Min.Y + (y * srcBounds.Dy() / coverSize)
-							img.Set(width/2-coverSize/2+x, titleHeight+padding+y, coverImg.At(srcX, srcY))
+							img.Set(width/2-coverSize/2+x, titleHeight+coverPadding+y, coverImg.At(srcX, srcY))
 						}
 					}
 				} else {
@@ -643,7 +644,7 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	addLabel(img, width/2-len(req.Title)*4, y, req.Title, textColor)
 	
 	// Items (centered, without points)
-	y = titleHeight + coverSize + padding*2
+	y = titleHeight + coverSize + coverPadding + padding
 	for _, item := range req.Items {
 		text := fmt.Sprintf("%d. %s", item.Rank, item.Name)
 		if len(text) > 90 {
