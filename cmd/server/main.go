@@ -582,7 +582,7 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	// Create image
 	const width = 800
 	lineHeight := 35
-	titleHeight := 120
+	titleHeight := 80
 	coverSize := 120
 	padding := 40
 	footerHeight := 60
@@ -626,15 +626,21 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	
 	// Draw text
 	textColor := color.RGBA{255, 255, 255, 255}
-	y := titleHeight - 70
+	subtitleColor := color.RGBA{180, 180, 180, 255}
+	y := titleHeight - 40
 	
-	// Title (centered)
+	// Subtitle first (centered)
+	subtitle := "My Favorite Ranking"
+	addLabel(img, width/2-len(subtitle)*4, y, subtitle, subtitleColor)
+	
+	// Title below (centered)
+	y += 20
 	addLabel(img, width/2-len(req.Title)*4, y, req.Title, textColor)
 	
-	// Items (centered)
+	// Items (centered, without points)
 	y = titleHeight + coverSize + padding*2
 	for _, item := range req.Items {
-		text := fmt.Sprintf("%d. %s %d points", item.Rank, item.Name, item.Score)
+		text := fmt.Sprintf("%d. %s", item.Rank, item.Name)
 		if len(text) > 90 {
 			text = text[:87] + "..."
 		}
