@@ -61,7 +61,7 @@ function SearchPanel({ onSelectAlbum, user }) {
       </div>
       {!user && (
         <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center', color: 'var(--muted)' }}>
-          Please login to search for albums and playlists
+          Please login with Spotify to search for albums and playlists
         </div>
       )}
     </div>

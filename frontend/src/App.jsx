@@ -216,7 +216,7 @@ function App() {
       <div className="container">
         <Header user={user} onRefresh={loadMe} onLogout={handleLogout} />
 
-        <div className="grid">
+        <div className={!currentAlbum ? "grid" : "centered-content"}>
           <div>
             {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} user={user} />}
 

@@ -97,6 +97,11 @@ input[type='text']::placeholder {
   align-items: start;
 }
 
+.centered-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .card {
   background: linear-gradient(
     180deg,

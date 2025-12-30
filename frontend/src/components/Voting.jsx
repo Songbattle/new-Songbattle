@@ -213,6 +213,17 @@ function Voting({ tracks, onShowResults }) {
               {a.artists.map(artist => artist.name).join(', ')}
             </p>
           )}
+          {a.id && (
+            <iframe
+              src={`https://open.spotify.com/embed/track/${a.id}?utm_source=generator&theme=0`}
+              width="100%"
+              height="80"
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              style={{ marginTop: '8px', borderRadius: '8px', border: 0 }}
+            ></iframe>
+          )}
           <div style={{ marginTop: '10px' }}>
             <button onClick={() => recordVote(state.aIdx)}>Choose left</button>
           </div>
@@ -246,6 +257,17 @@ function Voting({ tracks, onShowResults }) {
             <p style={{ margin: '4px 0', opacity: 0.7, fontSize: '0.9em' }}>
               {b.artists.map(artist => artist.name).join(', ')}
             </p>
+          )}
+          {b.id && (
+            <iframe
+              src={`https://open.spotify.com/embed/track/${b.id}?utm_source=generator&theme=0`}
+              width="100%"
+              height="80"
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              style={{ marginTop: '8px', borderRadius: '8px', border: 0 }}
+            ></iframe>
           )}
           <div style={{ marginTop: '10px' }}>
             <button onClick={() => recordVote(state.bIdx)}>Choose right</button>
