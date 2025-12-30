@@ -55,6 +55,7 @@ button {
   cursor: pointer;
   font-weight: 700;
   min-height: 44px;
+  min-width: 44px;
   font-size: 14px;
 }
 
@@ -271,7 +272,16 @@ input[type='text']::placeholder {
   }
   .top-actions {
     flex-direction: column;
-    align-items: flex-end;
+    align-items: stretch;
+    width: 100%;
+  }
+  .top-actions > * {
+    width: 100%;
+  }
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
   header h1 {
     font-size: 18px;
@@ -285,14 +295,24 @@ input[type='text']::placeholder {
     height: 48px;
   }
   .vote-card {
-    min-height: 100px;
-    padding: 12px;
+    min-height: 120px;
+    padding: 16px;
+  }
+  .voting {
+    flex-direction: column;
+    gap: 16px;
   }
   .center-controls {
     flex-direction: row;
+    gap: 8px;
   }
   .center-controls button {
-    min-width: 100px;
+    flex: 1;
+    min-width: auto;
+    padding: 12px 8px;
+  }
+  button.ghost {
+    padding: 10px 12px;
   }
 }
 
