@@ -41,9 +41,9 @@ function SearchPanel({ onSelectAlbum, user }) {
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          gap: '16px',
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: '12px',
           position: 'relative',
         }}
       >
