@@ -19,7 +19,7 @@ function Footer() {
     }
   }
 
-  const shortCommit = version?.commit?.substring(0, 7) || 'dev'
+  const shortCommit = version?.commit?.substring(0, 7) || ''
   const versionDisplay = version?.tag ? `${version.tag} (${shortCommit})` : shortCommit
 
   return (
@@ -30,15 +30,19 @@ function Footer() {
         </div>
         <div className="footer-version">
           <span className="version-label">Version:</span>{' '}
-          <a 
-            href={`https://github.com/T0biii/Spotify-Battle/commit/${version?.commit || 'main'}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer-link"
-            title={version?.date || 'Development version'}
-          >
-            {versionDisplay}
-          </a>
+          {version ? (
+            <a 
+              href={`https://github.com/T0biii/Spotify-Battle/commit/${version.commit}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+              title={version.date}
+            >
+              {versionDisplay}
+            </a>
+          ) : (
+            <span className="footer-link">—</span>
+          )}
         </div>
         <div className="footer-text">
           © {new Date().getFullYear()} Spotify Battle
