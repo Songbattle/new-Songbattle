@@ -582,9 +582,9 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	// Create image
 	const width = 800
 	lineHeight := 35
-	titleHeight := 80
+	titleHeight := 90
 	coverSize := 120
-	padding := 40
+	padding := 25
 	footerHeight := 60
 	
 	itemsHeight := len(req.Items) * lineHeight
@@ -627,14 +627,14 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	// Draw text
 	textColor := color.RGBA{255, 255, 255, 255}
 	subtitleColor := color.RGBA{180, 180, 180, 255}
-	y := titleHeight - 40
+	y := titleHeight - 50
 	
 	// Subtitle first (centered)
 	subtitle := "My Favorite Ranking"
 	addLabel(img, width/2-len(subtitle)*4, y, subtitle, subtitleColor)
 	
 	// Title below (centered)
-	y += 20
+	y += 30
 	addLabel(img, width/2-len(req.Title)*4, y, req.Title, textColor)
 	
 	// Items (centered, without points)

@@ -1,5 +1,5 @@
 module spotify-battle
 
-go 1.24.0
+go 1.24
 
 require golang.org/x/image v0.34.0
