@@ -18,9 +18,10 @@ COPY --from=frontend-builder /app/frontend/../web/dist ./web/dist
 # Accept build args for version info
 ARG GIT_COMMIT=unknown
 ARG BUILD_DATE=unknown
+ARG GIT_TAG=
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags="-X main.GitCommit=${GIT_COMMIT} -X main.BuildDate=${BUILD_DATE}" \
+    -ldflags="-X main.GitCommit=${GIT_COMMIT} -X main.BuildDate=${BUILD_DATE} -X main.GitTag=${GIT_TAG}" \
     -o /app/server ./cmd/server
 
 FROM alpine:latest

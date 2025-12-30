@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/font/inconsolata"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -28,6 +28,7 @@ import (
 var (
 	GitCommit = "dev"
 	BuildDate = "unknown"
+	GitTag    = "" // Set when building from a release tag
 )
 
 func main() {
@@ -503,10 +504,14 @@ func configHandler(w http.ResponseWriter, r *http.Request) {
 
 // versionHandler returns build version information
 func versionHandler(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{
+	response := map[string]string{
 		"commit": GitCommit,
 		"date":   BuildDate,
-	})
+	}
+	if GitTag != "" {
+		response["tag"] = GitTag
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 // uploadImageHandler accepts a multipart/form-data POST with `file` and saves it under web/uploads
@@ -645,7 +650,7 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 			text = text[:87] + "..."
 		}
 		// Center the text
-		textWidth := len(text) * 7 // basicfont.Face7x13 is ~7px wide per char
+		textWidth := len(text) * 8 // inconsolata.Regular8x16 is ~8px wide per char
 		addLabel(img, width/2-textWidth/2, y, text, textColor)
 		y += lineHeight
 	}
@@ -684,7 +689,7 @@ func addLabel(img *image.RGBA, x, y int, label string, col color.Color) {
 	d := &font.Drawer{
 		Dst:  img,
 		Src:  image.NewUniform(col),
-		Face: basicfont.Face7x13,
+		Face: inconsolata.Regular8x16,
 		Dot:  point,
 	}
 	d.DrawString(label)

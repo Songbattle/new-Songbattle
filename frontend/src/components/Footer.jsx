@@ -20,7 +20,7 @@ function Footer() {
   }
 
   const shortCommit = version?.commit?.substring(0, 7) || 'dev'
-  const versionText = shortCommit
+  const versionDisplay = version?.tag ? `${version.tag} (${shortCommit})` : shortCommit
 
   return (
     <footer className="footer">
@@ -37,7 +37,7 @@ function Footer() {
             className="footer-link"
             title={version?.date || 'Development version'}
           >
-            {versionText}
+            {versionDisplay}
           </a>
         </div>
         <div className="footer-text">
