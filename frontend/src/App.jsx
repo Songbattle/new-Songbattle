@@ -6,6 +6,8 @@ import AlbumView from './components/AlbumView'
 import Voting from './components/Voting'
 import Results from './components/Results'
 import Sidebar from './components/Sidebar'
+import Footer from './components/Footer'
+import Privacy from './components/Privacy'
 
 // Efficient merge-sort based voting - only necessary comparisons
 function generateVotingPairs(tracks) {
@@ -49,11 +51,33 @@ function App() {
   const [tracks, setTracks] = useState([])
   const [votingActive, setVotingActive] = useState(false)
   const [resultsActive, setResultsActive] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
 
   useEffect(() => {
     loadMe()
     loadConfig()
+    
+    // Check URL for privacy page
+    if (window.location.pathname === '/privacy') {
+      setShowPrivacy(true)
+    }
+
+    // Handle browser navigation
+    const handlePopState = () => {
+      setShowPrivacy(window.location.pathname === '/privacy')
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
   }, [])
+
+  // Update URL when privacy state changes
+  useEffect(() => {
+    if (showPrivacy && window.location.pathname !== '/privacy') {
+      window.history.pushState({}, '', '/privacy')
+    } else if (!showPrivacy && window.location.pathname === '/privacy') {
+      window.history.pushState({}, '', '/')
+    }
+  }, [showPrivacy])
 
   const loadMe = async () => {
     const me = await api('/api/me')
@@ -177,6 +201,16 @@ function App() {
     setResultsActive(false)
   }
 
+  // Show privacy page
+  if (showPrivacy) {
+    return (
+      <>
+        <Privacy />
+        <Footer />
+      </>
+    )
+  }
+
   return (
     <div className={currentAlbum ? 'album-mode' : ''}>
       <div className="container">
@@ -204,6 +238,7 @@ function App() {
                 tracks={tracks}
                 albumName={currentAlbum?.name || 'Results'}
                 shareUrl={shareUrl}
+                album={currentAlbum}
               />
             )}
           </div>
@@ -211,6 +246,8 @@ function App() {
           {!currentAlbum && <Sidebar />}
         </div>
       </div>
+      
+      <Footer />
     </div>
   )
 }

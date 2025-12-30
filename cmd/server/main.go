@@ -4,6 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
+	_ "image/gif"
+	_ "image/jpeg"
+	"image/png"
 	"io"
 	"log"
 	"net/http"
@@ -12,6 +18,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
+)
+
+// Version info set by build flags
+var (
+	GitCommit = "dev"
+	BuildDate = "unknown"
 )
 
 func main() {
@@ -51,9 +67,14 @@ func main() {
 	http.HandleFunc("/api/me/albums", cors(myAlbumsHandler))
 	http.HandleFunc("/api/config", cors(configHandler))
 	http.HandleFunc("/api/upload-image", cors(uploadImageHandler))
+	http.HandleFunc("/api/generate-image", cors(generateImageHandler))
+	http.HandleFunc("/api/version", cors(versionHandler))
 	http.HandleFunc("/api/search", cors(searchHandler))
 	http.HandleFunc("/api/albums/", cors(albumTracksHandler))
 	http.HandleFunc("/api/playlists/", cors(playlistTracksHandler))
+
+	// serve uploaded images
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./web/uploads"))))
 
 	// static files - serve built React app from web/dist with SPA fallback
 	http.HandleFunc("/", spaHandler)
@@ -480,6 +501,14 @@ func configHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"share_url": share})
 }
 
+// versionHandler returns build version information
+func versionHandler(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{
+		"commit": GitCommit,
+		"date":   BuildDate,
+	})
+}
+
 // uploadImageHandler accepts a multipart/form-data POST with `file` and saves it under web/uploads
 func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -519,6 +548,137 @@ func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 	// return a public URL path relative to web root
 	url := "/uploads/" + fn
 	writeJSON(w, http.StatusOK, map[string]string{"url": url})
+}
+
+// generateImageHandler generates a results image server-side
+func generateImageHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	
+	var req struct {
+		Title    string            `json:"title"`
+		Items    []struct {
+			Rank  int    `json:"rank"`
+			Name  string `json:"name"`
+			Score int    `json:"score"`
+		} `json:"items"`
+		ShareURL   string `json:"shareUrl"`
+		CoverImage string `json:"coverImage"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+	
+	uploadDir := "./web/uploads"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create upload dir"})
+		return
+	}
+	
+	// Create image
+	const width = 800
+	lineHeight := 35
+	titleHeight := 120
+	coverSize := 120
+	padding := 40
+	footerHeight := 60
+	
+	itemsHeight := len(req.Items) * lineHeight
+	height := titleHeight + coverSize + itemsHeight + footerHeight + padding*6
+	
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	
+	// Background color (dark, similar to app)
+	bgColor := color.RGBA{26, 29, 41, 255}
+	draw.Draw(img, img.Bounds(), &image.Uniform{bgColor}, image.Point{}, draw.Src)
+	
+	// Fetch and draw cover image if provided
+	if req.CoverImage != "" {
+		resp, err := http.Get(req.CoverImage)
+		if err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				coverImg, _, err := image.Decode(resp.Body)
+				if err == nil {
+					// Draw cover image centered and scaled
+					srcBounds := coverImg.Bounds()
+					for y := 0; y < coverSize; y++ {
+						for x := 0; x < coverSize; x++ {
+							srcX := srcBounds.Min.X + (x * srcBounds.Dx() / coverSize)
+							srcY := srcBounds.Min.Y + (y * srcBounds.Dy() / coverSize)
+							img.Set(width/2-coverSize/2+x, titleHeight+padding+y, coverImg.At(srcX, srcY))
+						}
+					}
+				} else {
+					log.Printf("Failed to decode cover image: %v", err)
+				}
+			} else {
+				log.Printf("Failed to fetch cover: HTTP %d", resp.StatusCode)
+			}
+		} else {
+			log.Printf("Failed to fetch cover image: %v", err)
+		}
+	}
+	
+	// Draw text
+	textColor := color.RGBA{255, 255, 255, 255}
+	y := titleHeight - 70
+	
+	// Title
+	addLabel(img, width/2-len(req.Title)*4, y, req.Title, textColor)
+	
+	// Items
+	y = titleHeight + coverSize + padding*4
+	for _, item := range req.Items {
+		text := fmt.Sprintf("%d. %s — %d points", item.Rank, item.Name, item.Score)
+		if len(text) > 90 {
+			text = text[:87] + "..."
+		}
+		addLabel(img, padding, y, text, textColor)
+		y += lineHeight
+	}
+	
+	// Footer (share URL)
+	if req.ShareURL != "" {
+		y += padding
+		addLabel(img, padding, y, req.ShareURL, color.RGBA{150, 150, 150, 255})
+	}
+	
+	// Save to file
+	fn := fmt.Sprintf("%d.png", time.Now().UnixNano())
+	full := filepath.Join(uploadDir, fn)
+	
+	f, err := os.Create(full)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create file"})
+		return
+	}
+	defer f.Close()
+	
+	if err := png.Encode(f, img); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot encode image"})
+		return
+	}
+	
+	// Return relative URL (browser will use correct base)
+	url := "/uploads/" + fn
+	writeJSON(w, http.StatusOK, map[string]string{"url": url})
+}
+
+// addLabel draws text on an image at position (x,y)
+func addLabel(img *image.RGBA, x, y int, label string, col color.Color) {
+	point := fixed.Point26_6{X: fixed.I(x), Y: fixed.I(y)}
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(col),
+		Face: basicfont.Face7x13,
+		Dot:  point,
+	}
+	d.DrawString(label)
 }
 
 // startUploadsCleanup starts a background goroutine that periodically

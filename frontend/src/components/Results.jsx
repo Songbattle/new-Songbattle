@@ -1,130 +1,49 @@
 import { useState, useEffect } from 'react'
 
-function Results({ tracks, albumName, shareUrl }) {
+function Results({ tracks, albumName, shareUrl, album }) {
   const [imageUrl, setImageUrl] = useState(null)
-  const [imageBlob, setImageBlob] = useState(null)
   const [uploadedUrl, setUploadedUrl] = useState(null)
+  const [rankedItems, setRankedItems] = useState([])
 
   useEffect(() => {
-    generateAndUploadImage()
+    generateImage()
   }, [])
 
-  const generateAndUploadImage = async () => {
+  const generateImage = async () => {
     const scores = JSON.parse(localStorage.getItem('scores') || '{}')
-    const res = await generateResultsImage(tracks, scores, albumName, shareUrl)
-    if (res && res.blob && res.url) {
-      setImageBlob(res.blob)
-      setImageUrl(res.url)
-
-      try {
-        const upload = await uploadImage(res.blob)
-        if (upload && upload.url) {
-          setUploadedUrl(upload.url)
-        }
-      } catch (e) {
-        console.warn('Upload failed', e)
-      }
-    }
-  }
-
-  const generateResultsImage = (tracksArr, scoresObj, title, shareLink) => {
-    return new Promise((resolve) => {
-      const ranked = Object.entries(scoresObj).sort((a, b) => b[1] - a[1])
-      const items = ranked.map(([id, sc], i) => {
-        const t = tracksArr.find((tt) => tt.id === id)
-        return { rank: i + 1, name: t ? t.name : id, score: sc }
-      })
-
-      const padding = 40
-      const width = 1000
-      const lineHeight = 48
-      const headerHeight = 100
-      const height =
-        padding * 2 + headerHeight + Math.max(items.length, 1) * lineHeight
-
-      const c = document.createElement('canvas')
-      c.width = width
-      c.height = height
-      const ctx = c.getContext('2d')
-
-      ctx.fillStyle = '#0f1724'
-      ctx.fillRect(0, 0, width, height)
-
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '32px sans-serif'
-      ctx.textAlign = 'center'
-      ctx.fillText('Spotify Battle Results', width / 2, padding + 34)
-
-      if (title) {
-        ctx.fillStyle = '#94a3b8'
-        ctx.font = '20px sans-serif'
-        ctx.fillText(title, width / 2, padding + 66)
-      }
-
-      let y = padding + headerHeight - 20
-      ctx.font = '20px sans-serif'
-      ctx.fillStyle = '#e6eef8'
-      ctx.textAlign = 'left'
-
-      items.forEach((it) => {
-        const text = `${it.rank}. ${it.name}`
-        let drawText = text
-        while (
-          ctx.measureText(drawText).width >
-          width - padding * 3 - 100
-        ) {
-          drawText = drawText.slice(0, -1)
-          if (drawText.length < 4) break
-        }
-        if (drawText !== text) drawText = drawText.slice(0, -3) + '...'
-        ctx.fillText(drawText, padding, y)
-
-        ctx.textAlign = 'right'
-        ctx.fillStyle = '#93c5fd'
-        ctx.fillText(String(it.score), width - padding, y)
-
-        ctx.textAlign = 'left'
-        ctx.fillStyle = '#e6eef8'
-        y += lineHeight
-      })
-
-      if (shareLink) {
-        const bottomY = height - padding / 2
-        ctx.font = '14px sans-serif'
-        ctx.fillStyle = '#94a3b8'
-        ctx.textAlign = 'center'
-        ctx.fillText(shareLink, width / 2, bottomY)
-      }
-
-      if (c.toBlob) {
-        c.toBlob((blob) => {
-          const url = URL.createObjectURL(blob)
-          resolve({ blob, url })
-        })
-      } else {
-        const dataUrl = c.toDataURL('image/png')
-        fetch(dataUrl)
-          .then((r) => r.blob())
-          .then((blob) => {
-            resolve({ blob, url: URL.createObjectURL(blob) })
-          })
-      }
+    const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1])
+    const items = ranked.map(([id, sc], i) => {
+      const t = tracks.find((tt) => tt.id === id)
+      return { rank: i + 1, name: t ? t.name : id, score: sc }
     })
-  }
+    
+    setRankedItems(items)
 
-  const uploadImage = async (blob) => {
+    // Get cover image URL
+    const coverImage = album?.images?.[0]?.url || ''
+
     try {
-      const fd = new FormData()
-      fd.append('file', blob, 'spotify-battle.png')
-      const resp = await fetch('/api/upload-image', {
+      const resp = await fetch('/api/generate-image', {
         method: 'POST',
-        body: fd,
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({
+          title: albumName,
+          items: items,
+          shareUrl: shareUrl || '',
+          coverImage: coverImage
+        })
       })
-      if (!resp.ok) return null
-      return await resp.json()
+      
+      if (resp.ok) {
+        const data = await resp.json()
+        if (data.url) {
+          setUploadedUrl(data.url)
+          setImageUrl(data.url)
+        }
+      }
     } catch (e) {
-      return null
+      console.error('Failed to generate image:', e)
     }
   }
 
@@ -132,37 +51,32 @@ function Results({ tracks, albumName, shareUrl }) {
     if (imageUrl) window.open(imageUrl, '_blank')
   }
 
-  const handleCopyImage = async () => {
-    if (!imageBlob) {
-      alert('No image available')
-      return
+  const handleCopyLink = async () => {
+    let linkToCopy = imageUrl || shareUrl || window.location.href
+    // Convert relative URL to absolute for sharing
+    if (imageUrl && imageUrl.startsWith('/')) {
+      linkToCopy = window.location.origin + imageUrl
     }
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': imageBlob }),
-      ])
-      alert('Image copied to clipboard')
+      await navigator.clipboard.writeText(linkToCopy)
+      alert('Link copied to clipboard')
     } catch (e) {
-      try {
-        await navigator.clipboard.writeText(shareUrl || window.location.href)
-        alert('Copied share link instead')
-      } catch (_) {
-        alert('Copy failed')
-      }
+      alert('Copy failed')
     }
   }
 
   const handleWebShare = async () => {
     if (navigator.share) {
+      let shareLink = uploadedUrl || shareUrl || window.location.href
+      // Convert relative URL to absolute
+      if (imageUrl && imageUrl.startsWith('/')) {
+        shareLink = window.location.origin + imageUrl
+      }
       try {
-        const files = imageBlob
-          ? [new File([imageBlob], 'spotify-battle.png', { type: 'image/png' })]
-          : []
         await navigator.share({
           title: 'Spotify Battle Results',
           text: albumName || 'My results',
-          url: shareUrl || undefined,
-          files,
+          url: shareLink,
         })
       } catch (e) {
         alert('Share failed')
@@ -239,8 +153,8 @@ function Results({ tracks, albumName, shareUrl }) {
           <button className="ghost" onClick={handleOpenImage}>
             Open image
           </button>
-          <button className="ghost" onClick={handleCopyImage}>
-            Copy image
+          <button className="ghost" onClick={handleCopyLink}>
+            Copy link
           </button>
           <button className="ghost" onClick={handleWebShare}>
             Share...

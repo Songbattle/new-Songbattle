@@ -157,7 +157,7 @@ input[type='text']::placeholder {
 
 .suggestions .suggestion {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   padding: 10px;
   border-radius: 8px;
@@ -307,4 +307,142 @@ input[type='text']::placeholder {
 
 .album-mode .grid {
   grid-template-columns: 1fr;
+}
+
+/* Footer */
+.footer {
+  margin-top: 60px;
+  padding: 24px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+}
+
+.footer-version {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.version-label {
+  color: var(--muted);
+  margin-right: 4px;
+}
+
+.footer-text {
+  flex: 1;
+  text-align: right;
+}
+
+.footer-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--accent);
+}
+
+.footer-text {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Privacy Page */
+.privacy-page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 40px 20px;
+}
+
+.privacy-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.privacy-container h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.privacy-date {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+.privacy-section {
+  margin-bottom: 32px;
+}
+
+.privacy-section h2 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: #fff;
+}
+
+.privacy-section p {
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 12px;
+}
+
+.privacy-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.privacy-link:hover {
+  text-decoration: underline;
+}
+
+.privacy-back {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+  .privacy-container {
+    padding: 24px;
+  }
+  
+  .privacy-container h1 {
+    font-size: 24px;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .footer-links,
+  .footer-version,
+  .footer-text {
+    flex: none;
+    text-align: center;
+  }
 }

@@ -225,7 +225,7 @@ function SearchColumn({ type, onSelect, disabled, myItems }) {
                 : item.owner?.display_name || ''
               return (
                 <div key={item.id} className="album">
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <img className="cover" src={img} alt="cover" />
                     <div className="meta">
                       <strong>{item.name}</strong>
@@ -262,7 +262,7 @@ function SearchColumn({ type, onSelect, disabled, myItems }) {
                 : item.owner?.display_name || ''
               return (
                 <div key={item.id} className="album">
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <img className="cover" src={img} alt="cover" />
                     <div className="meta">
                       <strong>{item.name}</strong>
