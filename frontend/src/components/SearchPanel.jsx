@@ -19,7 +19,11 @@ function SearchPanel({ onSelectAlbum, user }) {
   const loadMyPlaylists = async () => {
     try {
       const res = await api('/api/me/playlists')
-      setMyPlaylists(res.items || [])
+      // Filter out playlists with less than 2 tracks
+      const playlists = (res.items || []).filter(
+        item => item && item.tracks && item.tracks.total >= 2
+      )
+      setMyPlaylists(playlists)
     } catch (e) {
       console.error('Failed to load playlists:', e)
     }
@@ -30,7 +34,11 @@ function SearchPanel({ onSelectAlbum, user }) {
       const res = await api('/api/me/albums')
       // Spotify returns {items: [{album: {...}}]} for saved albums
       const albums = (res.items || []).map(item => item.album || item)
-      setMyAlbums(albums)
+      // Filter out albums with less than 2 tracks
+      const filtered = albums.filter(
+        album => album && album.total_tracks >= 2
+      )
+      setMyAlbums(filtered)
     } catch (e) {
       console.error('Failed to load albums:', e)
     }
