@@ -67,71 +67,47 @@ function Results({ tracks, albumName, shareUrl, album }) {
 
   const handleWebShare = async () => {
     if (navigator.share) {
-      let shareLink = uploadedUrl || shareUrl || window.location.href
-      // Convert relative URL to absolute
-      if (imageUrl && imageUrl.startsWith('/')) {
-        shareLink = window.location.origin + imageUrl
-      }
+      let shareFile = null
+      let shareText = `I ranked the songs in "${albumName}" by their awesomeness! 🎵`
+      
+      // Try to use the generated image if available
       try {
-        await navigator.share({
-          title: 'Spotify Battle Results',
-          text: albumName || 'My results',
-          url: shareLink,
-        })
+        if (uploadedUrl && uploadedUrl.startsWith('/')) {
+          // Try to fetch and share the image file
+          const imgResponse = await fetch(window.location.origin + uploadedUrl)
+          if (imgResponse.ok) {
+            const blob = await imgResponse.blob()
+            shareFile = new File([blob], 'spotify-battle.png', { type: 'image/png' })
+          }
+        }
       } catch (e) {
-        alert('Share failed')
+        console.log('Could not fetch image for sharing')
+      }
+
+      try {
+        const shareData = {
+          title: 'Spotify Battle Results',
+          text: shareText,
+          url: window.location.href,
+        }
+        
+        // Add image if we managed to fetch it
+        if (shareFile && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+          shareData.files = [shareFile]
+        }
+        
+        await navigator.share(shareData)
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          alert('Share failed')
+        }
       }
     } else {
       alert('Web Share not supported in this browser')
     }
   }
 
-  const handleTwitter = () => {
-    const text = encodeURIComponent(
-      `My Spotify Battle results: ${albumName || ''}`
-    )
-    const url = encodeURIComponent(
-      uploadedUrl || shareUrl || window.location.href
-    )
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
-  }
 
-  const handleBluesky = () => {
-    const text = encodeURIComponent(
-      `My Spotify Battle results: ${albumName || ''} ${uploadedUrl || shareUrl || ''}`
-    )
-    window.open(`https://bsky.app/compose?text=${text}`, '_blank')
-  }
-
-  const handleMastodon = () => {
-    const text = encodeURIComponent(
-      `My Spotify Battle results: ${albumName || ''}`
-    )
-    const url = encodeURIComponent(
-      uploadedUrl || shareUrl || window.location.href
-    )
-    window.open(
-      `https://mastodon.social/share?text=${text}%20${url}`,
-      '_blank'
-    )
-  }
-
-  const handleInstagram = async () => {
-    try {
-      if (navigator.share && imageBlob) {
-        await navigator.share({
-          files: [
-            new File([imageBlob], 'spotify-battle.png', { type: 'image/png' }),
-          ],
-          title: 'Spotify Battle',
-        })
-      } else {
-        window.open(imageUrl || '', '_blank')
-      }
-    } catch (e) {
-      window.open(imageUrl || '', '_blank')
-    }
-  }
 
   const scores = JSON.parse(localStorage.getItem('scores') || '{}')
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1])
@@ -157,19 +133,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
             Copy link
           </button>
           <button className="ghost" onClick={handleWebShare}>
-            Share...
-          </button>
-          <button className="ghost" onClick={handleTwitter}>
-            Twitter
-          </button>
-          <button className="ghost" onClick={handleBluesky}>
-            Bluesky
-          </button>
-          <button className="ghost" onClick={handleMastodon}>
-            Mastodon
-          </button>
-          <button className="ghost" onClick={handleInstagram}>
-            Instagram
+            Share with image
           </button>
         </div>
       </div>

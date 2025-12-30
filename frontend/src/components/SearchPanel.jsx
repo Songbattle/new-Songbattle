@@ -43,7 +43,7 @@ function SearchPanel({ onSelectAlbum, user }) {
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: '12px',
+          gap: '20px',
           position: 'relative',
         }}
       >
