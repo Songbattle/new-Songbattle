@@ -59,6 +59,13 @@ function App() {
     loadTokenStatus()
     checkLoginResponse()
     
+    // Listen for rate limit events
+    const handleRateLimit = (event) => {
+      setLoginInfo({ type: 'warning', message: event.detail.message })
+      setTimeout(() => setLoginInfo(null), 10000)
+    }
+    window.addEventListener('spotify-rate-limit', handleRateLimit)
+    
     // Check URL for privacy page
     if (window.location.pathname === '/privacy') {
       setShowPrivacy(true)
@@ -69,7 +76,10 @@ function App() {
       setShowPrivacy(window.location.pathname === '/privacy')
     }
     window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('spotify-rate-limit', handleRateLimit)
+    }
   }, [])
 
   // Update URL when privacy state changes

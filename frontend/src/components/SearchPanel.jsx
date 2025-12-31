@@ -18,6 +18,8 @@ function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro, loginInfo })
       return { ...baseStyle, background: 'rgba(29, 185, 84, 0.1)', color: '#1db954' }
     } else if (loginInfo.type === 'info') {
       return { ...baseStyle, background: 'rgba(255, 165, 0, 0.1)', color: '#ffa500' }
+    } else if (loginInfo.type === 'warning') {
+      return { ...baseStyle, background: 'rgba(255, 69, 58, 0.1)', color: '#ff453a' }
     }
     return baseStyle
   }
