@@ -278,6 +278,62 @@ func notifyDiscordTokenSuccess(expiryTime time.Time) {
 	}
 }
 
+// notifyDiscordRateLimit sends a notification to Discord when Spotify rate limit is hit
+func notifyDiscordRateLimit() {
+	if discordWebhookURL == "" {
+		return
+	}
+	
+	message := map[string]interface{}{
+		"content": "🚨 Spotify API rate limit (429) encountered. Please wait before making more requests.",
+	}
+	
+	jsonData, _ := json.Marshal(message)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, discordWebhookURL, strings.NewReader(string(jsonData)))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Failed to send Discord notification: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode >= 400 {
+		log.Printf("Discord webhook returned error: %d", resp.StatusCode)
+	} else {
+		log.Println("Discord notification sent successfully")
+	}
+}
+
+// notifyDiscordError sends a notification to Discord for general API errors
+func notifyDiscordError(endpoint string, statusCode int, errorMsg string) {
+	if discordWebhookURL == "" {
+		return
+	}
+	
+	message := map[string]interface{}{
+		"content": fmt.Sprintf("❌ Spotify API error at %s: HTTP %d - %s", endpoint, statusCode, errorMsg),
+	}
+	
+	jsonData, _ := json.Marshal(message)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, discordWebhookURL, strings.NewReader(string(jsonData)))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Failed to send Discord notification: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode >= 400 {
+		log.Printf("Discord webhook returned error: %d", resp.StatusCode)
+	} else {
+		log.Println("Discord notification sent successfully")
+	}
+}
+
 // adminCallbackHandler handles OAuth callback and stores token server-side
 func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if spotifyClientID == "" || spotifyClientSecret == "" {
@@ -472,6 +528,14 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
+	
+	// Check for rate limit or errors
+	if resp.StatusCode == 429 {
+		notifyDiscordRateLimit()
+	} else if resp.StatusCode >= 400 {
+		notifyDiscordError("/api/search", resp.StatusCode, string(body))
+	}
+	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.StatusCode)
 	w.Write(body)
@@ -512,6 +576,14 @@ func albumTracksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
+	
+	// Check for rate limit or errors
+	if resp.StatusCode == 429 {
+		notifyDiscordRateLimit()
+	} else if resp.StatusCode >= 400 {
+		notifyDiscordError("/api/albums/tracks", resp.StatusCode, string(body))
+	}
+	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.StatusCode)
 	w.Write(body)
@@ -552,6 +624,14 @@ func playlistTracksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
+	
+	// Check for rate limit or errors
+	if resp.StatusCode == 429 {
+		notifyDiscordRateLimit()
+	} else if resp.StatusCode >= 400 {
+		notifyDiscordError("/api/playlists/tracks", resp.StatusCode, string(body))
+	}
+	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.StatusCode)
 	w.Write(body)
