@@ -56,8 +56,9 @@ function Privacy() {
         <section className="privacy-section">
           <h2>Third-Party Services</h2>
           <p>
-            Spotify Battle integrates with Spotify's API. Your use of Spotify's 
-            services is governed by{' '}
+            Spotify Battle integrates with Spotify's API. All music data, including 
+            album information, track details, and cover images, are provided directly 
+            by Spotify. Your use of Spotify's services is governed by{' '}
             <a 
               href="https://www.spotify.com/legal/privacy-policy/" 
               target="_blank" 
@@ -66,6 +67,11 @@ function Privacy() {
             >
               Spotify's Privacy Policy
             </a>.
+          </p>
+          <p>
+            Album artwork and other visual content displayed in this application 
+            are sourced from Spotify's API and remain the property of their 
+            respective copyright holders.
           </p>
         </section>
 

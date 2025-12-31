@@ -52,10 +52,12 @@ function App() {
   const [resultsActive, setResultsActive] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [tokenStatus, setTokenStatus] = useState(false)
+  const [loginInfo, setLoginInfo] = useState(null)
 
   useEffect(() => {
     loadConfig()
     loadTokenStatus()
+    checkLoginResponse()
     
     // Check URL for privacy page
     if (window.location.pathname === '/privacy') {
@@ -94,6 +96,27 @@ function App() {
       setTokenStatus(status && status.hasToken)
     } catch (e) {
       setTokenStatus(false)
+    }
+  }
+
+  const checkLoginResponse = () => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('admin') === 'success') {
+      setLoginInfo({ type: 'success', message: 'Login successful! Token has been acquired.' })
+      // Clear URL parameter
+      window.history.replaceState({}, '', window.location.pathname)
+      // Clear message after 5 seconds
+      setTimeout(() => setLoginInfo(null), 5000)
+      // Reload token status
+      loadTokenStatus()
+    } else if (params.get('login-info')) {
+      setLoginInfo({ type: 'info', message: params.get('login-info') })
+      // Clear URL parameter
+      window.history.replaceState({}, '', window.location.pathname)
+      // Clear message after 8 seconds
+      setTimeout(() => setLoginInfo(null), 8000)
+      // Reload token status
+      loadTokenStatus()
     }
   }
 
@@ -211,7 +234,7 @@ function App() {
 
         <div className="centered-content">
           <div>
-            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} showIntro={!currentAlbum} />}
+            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} showIntro={!currentAlbum} loginInfo={loginInfo} />}
 
             {currentAlbum && (
               <AlbumView

@@ -1,9 +1,34 @@
 import { useState } from 'react'
 import SearchColumn from './SearchColumn'
 
-function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro }) {
+function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro, loginInfo }) {
+  const getInfoStyle = () => {
+    if (!loginInfo) return {}
+    
+    const baseStyle = {
+      marginBottom: '20px',
+      padding: '16px',
+      borderRadius: '8px',
+      textAlign: 'center',
+      fontSize: '14px',
+      lineHeight: '1.6'
+    }
+    
+    if (loginInfo.type === 'success') {
+      return { ...baseStyle, background: 'rgba(29, 185, 84, 0.1)', color: '#1db954' }
+    } else if (loginInfo.type === 'info') {
+      return { ...baseStyle, background: 'rgba(255, 165, 0, 0.1)', color: '#ffa500' }
+    }
+    return baseStyle
+  }
+  
   return (
     <div className="card">
+      {loginInfo && (
+        <div style={getInfoStyle()}>
+          {loginInfo.message}
+        </div>
+      )}
       {showIntro && tokenStatus && (
         <div style={{ marginBottom: '20px', padding: '16px', background: 'rgba(29, 185, 84, 0.1)', borderRadius: '8px', textAlign: 'center', color: '#1db954', fontSize: '14px', lineHeight: '1.6' }}>
           <strong>Welcome to Spotify Battle!</strong><br />
