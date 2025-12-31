@@ -124,10 +124,8 @@ var (
 func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if valid token already exists
 	if globalAccessToken != "" && time.Now().Before(globalTokenExpiry) {
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"message": "Valid token already exists. Login not needed.",
-			"expiry":  globalTokenExpiry.Format(time.RFC3339),
-		})
+		message := fmt.Sprintf("Valid token already exists. Login not needed. (Expires: %s)", globalTokenExpiry.Format("2006-01-02 15:04:05"))
+		http.Redirect(w, r, "/?login-info="+urlEncode(message), http.StatusFound)
 		return
 	}
 	
