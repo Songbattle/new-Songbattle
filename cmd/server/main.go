@@ -42,7 +42,6 @@ func main() {
 	// assign globals from environment after possible .env load
 	spotifyClientID = os.Getenv("SPOTIFY_CLIENT_ID")
 	spotifyClientSecret = os.Getenv("SPOTIFY_CLIENT_SECRET")
-	spotifyRedirect = os.Getenv("SPOTIFY_REDIRECT_URL")
 	discordWebhookURL = os.Getenv("DISCORD_WEBHOOK_URL")
 	// start uploads cleanup: remove files older than configured TTL every configured interval
 	uploadDir := "./web/uploads"
@@ -126,17 +125,21 @@ var (
 
 // adminLoginHandler initiates Spotify OAuth for server-side token management
 func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
-	if spotifyClientID == "" || spotifyRedirect == "" {
+	if spotifyClientID == "" {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"mock": true, "message": "No Spotify creds set; using mock mode"})
 		return
 	}
-	scopes := "user-read-private user-read-email playlist-read-private playlist-read-collaborative user-library-read"
-	// Use a different redirect for admin login to store token server-side
-	adminRedirect := spotifyRedirect
-	if strings.Contains(adminRedirect, "/callback") {
-		adminRedirect = strings.Replace(adminRedirect, "/callback", "/admin-callback", 1)
+	
+	// Build redirect URL from request
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
 	}
-	url := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s", spotifyClientID, urlEncode(scopes), urlEncode(adminRedirect))
+	host := r.Host
+	redirectURL := fmt.Sprintf("%s://%s/admin-callback", scheme, host)
+	
+	scopes := "user-read-private user-read-email playlist-read-private playlist-read-collaborative user-library-read"
+	url := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s", spotifyClientID, urlEncode(scopes), urlEncode(redirectURL))
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
@@ -245,7 +248,7 @@ func notifyDiscordTokenExpired() {
 
 // adminCallbackHandler handles OAuth callback and stores token server-side
 func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	if spotifyClientID == "" || spotifyClientSecret == "" || spotifyRedirect == "" {
+	if spotifyClientID == "" || spotifyClientSecret == "" {
 		globalAccessToken = "mock-token"
 		globalTokenExpiry = time.Now().Add(24 * time.Hour)
 		http.Redirect(w, r, "/?admin=success", http.StatusFound)
@@ -258,16 +261,19 @@ func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Exchange code for token
-	adminRedirect := spotifyRedirect
-	if strings.Contains(adminRedirect, "/callback") {
-		adminRedirect = strings.Replace(adminRedirect, "/callback", "/admin-callback", 1)
+	// Build redirect URL from request
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
 	}
+	host := r.Host
+	redirectURL := fmt.Sprintf("%s://%s/admin-callback", scheme, host)
 	
+	// Exchange code for token
 	form := urlEncodeForm(map[string]string{
 		"grant_type":   "authorization_code",
 		"code":         code,
-		"redirect_uri": adminRedirect,
+		"redirect_uri": redirectURL,
 	})
 	
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://accounts.spotify.com/api/token", strings.NewReader(form))
