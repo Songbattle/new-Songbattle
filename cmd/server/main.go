@@ -122,6 +122,15 @@ var (
 
 // adminLoginHandler initiates Spotify OAuth for server-side token management
 func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if valid token already exists
+	if globalAccessToken != "" && time.Now().Before(globalTokenExpiry) {
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"message": "Valid token already exists. Login not needed.",
+			"expiry":  globalTokenExpiry.Format(time.RFC3339),
+		})
+		return
+	}
+	
 	if spotifyClientID == "" {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"mock": true, "message": "No Spotify creds set; using mock mode"})
 		return
@@ -455,7 +464,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	apiURL := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&type=%s&limit=10", urlEncode(q), searchType)
+	apiURL := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&type=%s&limit=%d&offset=%d", urlEncode(q), searchType, limit, offset)
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
