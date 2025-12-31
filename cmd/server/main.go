@@ -64,8 +64,6 @@ func main() {
 	addr := ":8080"
 	http.HandleFunc("/login", cors(adminLoginHandler))
 	http.HandleFunc("/admin-callback", cors(adminCallbackHandler))
-	http.HandleFunc("/api/login", cors(loginHandler))
-	http.HandleFunc("/api/callback", cors(callbackHandler))
 	http.HandleFunc("/api/me", cors(meHandler))
 	http.HandleFunc("/api/me/playlists", cors(myPlaylistsHandler))
 	http.HandleFunc("/api/me/albums", cors(myAlbumsHandler))
@@ -125,16 +123,6 @@ var (
 	globalTokenExpiry   time.Time
 	discordWebhookURL   string
 )
-
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	if spotifyClientID == "" || spotifyRedirect == "" {
-		writeJSON(w, http.StatusOK, map[string]interface{}{"mock": true, "message": "No Spotify creds set; using mock mode"})
-		return
-	}
-	scopes := "user-read-private user-read-email playlist-read-private playlist-read-collaborative user-library-read"
-	url := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s", spotifyClientID, urlEncode(scopes), urlEncode(spotifyRedirect))
-	http.Redirect(w, r, url, http.StatusFound)
-}
 
 // adminLoginHandler initiates Spotify OAuth for server-side token management
 func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -318,54 +306,6 @@ func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	http.Redirect(w, r, "/?admin=success", http.StatusFound)
-}
-
-func callbackHandler(w http.ResponseWriter, r *http.Request) {
-	if spotifyClientID == "" || spotifyClientSecret == "" || spotifyRedirect == "" {
-		http.SetCookie(w, &http.Cookie{Name: "access_token", Value: "mock-token", Path: "/", Expires: time.Now().Add(24 * time.Hour)})
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	code := r.URL.Query().Get("code")
-	if code == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing code"})
-		return
-	}
-	// Exchange code for token (simple implementation)
-	form := urlEncodeForm(map[string]string{
-		"grant_type":   "authorization_code",
-		"code":         code,
-		"redirect_uri": spotifyRedirect,
-	})
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://accounts.spotify.com/api/token", strings.NewReader(form))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(spotifyClientID, spotifyClientSecret)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode >= 400 {
-		w.WriteHeader(resp.StatusCode)
-		w.Write(body)
-		return
-	}
-	// parse token from Spotify response and set cookie, then redirect to SPA
-	var data map[string]interface{}
-	if err := json.Unmarshal(body, &data); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "invalid token response"})
-		return
-	}
-	at, _ := data["access_token"].(string)
-	if at == "" {
-		// fallback: keep raw body but set generic cookie
-		http.SetCookie(w, &http.Cookie{Name: "access_token", Value: "real-token", Path: "/", Expires: time.Now().Add(24 * time.Hour)})
-	} else {
-		http.SetCookie(w, &http.Cookie{Name: "access_token", Value: at, Path: "/", Expires: time.Now().Add(24 * time.Hour)})
-	}
-	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
