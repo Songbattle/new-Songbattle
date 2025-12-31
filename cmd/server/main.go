@@ -63,9 +63,6 @@ func main() {
 	addr := ":8080"
 	http.HandleFunc("/login", cors(adminLoginHandler))
 	http.HandleFunc("/admin-callback", cors(adminCallbackHandler))
-	http.HandleFunc("/api/me", cors(meHandler))
-	http.HandleFunc("/api/me/playlists", cors(myPlaylistsHandler))
-	http.HandleFunc("/api/me/albums", cors(myAlbumsHandler))
 	http.HandleFunc("/api/config", cors(configHandler))
 	http.HandleFunc("/api/upload-image", cors(uploadImageHandler))
 	http.HandleFunc("/api/generate-image", cors(generateImageHandler))
@@ -312,112 +309,6 @@ func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	http.Redirect(w, r, "/?admin=success", http.StatusFound)
-}
-
-func meHandler(w http.ResponseWriter, r *http.Request) {
-	if spotifyClientID == "" || spotifyClientSecret == "" {
-		// mock mode with avatar
-		writeJSON(w, http.StatusOK, map[string]interface{}{"id": "mock-user", "display_name": "Mock User", "images": []map[string]string{{"url": "https://picsum.photos/seed/mock-user/48"}}})
-		return
-	}
-
-	// Use global token instead of cookie
-	token, err := getValidToken()
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
-		return
-	}
-
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.spotify.com/v1/me", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
-}
-
-func myPlaylistsHandler(w http.ResponseWriter, r *http.Request) {
-	// Get user's playlists, limit to 5
-	if spotifyClientID == "" || spotifyClientSecret == "" {
-		// mock mode - return 5 mock playlists
-		items := []map[string]interface{}{}
-		for i := 1; i <= 5; i++ {
-			items = append(items, map[string]interface{}{
-				"id":     fmt.Sprintf("mypl%d", i),
-				"name":   fmt.Sprintf("My Playlist %d", i),
-				"owner":  map[string]string{"display_name": "Mock User"},
-				"images": []map[string]string{{"url": fmt.Sprintf("https://picsum.photos/seed/mypl%d/80", i)}},
-				"tracks": map[string]int{"total": 20 + i},
-			})
-		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"items": items})
-		return
-	}
-
-	token, err := getValidToken()
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
-		return
-	}
-
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.spotify.com/v1/me/playlists?limit=5", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
-}
-
-func myAlbumsHandler(w http.ResponseWriter, r *http.Request) {
-	// Get user's saved albums, limit to 5
-	if spotifyClientID == "" || spotifyClientSecret == "" {
-		// mock mode - return 5 mock albums
-		items := []map[string]interface{}{}
-		for i := 1; i <= 5; i++ {
-			items = append(items, map[string]interface{}{
-				"album": map[string]interface{}{
-					"id":      fmt.Sprintf("myalb%d", i),
-					"name":    fmt.Sprintf("My Album %d", i),
-					"artists": []map[string]string{{"name": "Mock Artist"}},
-					"images":  []map[string]string{{"url": fmt.Sprintf("https://picsum.photos/seed/myalb%d/80", i)}},
-					"total_tracks": 10 + i,
-				},
-			})
-		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"items": items})
-		return
-	}
-
-	token, err := getValidToken()
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
-		return
-	}
-
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.spotify.com/v1/me/albums?limit=5", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
 }
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {

@@ -3,8 +3,8 @@ import api from '../utils/api'
 
 const PAGE_LIMIT = 10
 
-function SearchColumn({ type, onSelect, disabled, myItems }) {
-  const [query, setQuery] = useState('')
+function SearchColumn({ type, onSelect, disabled, defaultQuery }) {
+  const [query, setQuery] = useState(defaultQuery || '')
   const [suggestions, setSuggestions] = useState([])
   const [results, setResults] = useState([])
   const [page, setPage] = useState(0)
@@ -19,9 +19,12 @@ function SearchColumn({ type, onSelect, disabled, myItems }) {
   const label = isAlbum ? 'Albums' : 'Playlists'
   const placeholder = isAlbum ? 'Search album...' : 'Search playlist...'
 
-  // Show my items when available and no search results yet
-  const showMyItems = myItems && myItems.length > 0 && results.length === 0
-  const myItemsLabel = isAlbum ? 'Your Saved Albums' : 'Your Playlists'
+  // Initial search if defaultQuery is provided
+  useEffect(() => {
+    if (defaultQuery && !disabled) {
+      handleSearch()
+    }
+  }, [defaultQuery, disabled])
 
   const handleInputChange = (e) => {
     if (disabled) return
@@ -206,46 +209,6 @@ function SearchColumn({ type, onSelect, disabled, myItems }) {
         </div>
       )}
       </div>
-
-      {showMyItems && (
-        <div style={{ marginTop: '12px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>
-            {myItemsLabel}
-          </div>
-          <div className="album-list">
-            {myItems.map((item) => {
-              if (!item || !item.id) return null
-              const img =
-                item.images?.[0]?.url ||
-                `https://picsum.photos/seed/${item.id}/64`
-              const subtitle = isAlbum
-                ? item.artists?.map((a) => a.name).join(', ') || ''
-                : item.owner?.display_name || ''
-              return (
-                <div key={item.id} className="album">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <img className="cover" src={img} alt="cover" />
-                    <div className="meta">
-                      <strong>{item.name}</strong>
-                      <div className="muted">{subtitle}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <button
-                      className="ghost"
-                      onClick={() =>
-                        onSelect({ ...item, type: isAlbum ? 'album' : 'playlist' })
-                      }
-                    >
-                      Select
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {results.length > 0 && (
         <>

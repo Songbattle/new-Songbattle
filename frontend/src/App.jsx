@@ -45,7 +45,6 @@ function generateVotingPairs(tracks) {
 }
 
 function App() {
-  const [user, setUser] = useState(null)
   const [shareUrl, setShareUrl] = useState('')
   const [currentAlbum, setCurrentAlbum] = useState(null)
   const [tracks, setTracks] = useState([])
@@ -55,7 +54,6 @@ function App() {
   const [tokenStatus, setTokenStatus] = useState(false)
 
   useEffect(() => {
-    loadMe()
     loadConfig()
     loadTokenStatus()
     
@@ -81,13 +79,6 @@ function App() {
     }
   }, [showPrivacy])
 
-  const loadMe = async () => {
-    const me = await api('/api/me')
-    if (me && me.display_name) {
-      setUser(me)
-    }
-  }
-
   const loadConfig = async () => {
     try {
       const cfg = await api('/api/config')
@@ -104,14 +95,6 @@ function App() {
     } catch (e) {
       setTokenStatus(false)
     }
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('pairs')
-    localStorage.removeItem('scores')
-    localStorage.removeItem('pairsIndex')
-    setUser(null)
-    window.location.href = '/'
   }
 
   const handleSelectAlbum = async (album) => {
@@ -224,11 +207,11 @@ function App() {
   return (
     <div className={currentAlbum ? 'album-mode' : ''}>
       <div className="container">
-        <Header user={user} onRefresh={loadMe} onLogout={handleLogout} tokenStatus={tokenStatus} />
+        <Header tokenStatus={tokenStatus} />
 
         <div className="centered-content">
           <div>
-            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} user={user} tokenStatus={tokenStatus} />}
+            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} />}
 
             {currentAlbum && (
               <AlbumView
