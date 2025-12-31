@@ -43,6 +43,27 @@ func main() {
 	spotifyClientID = os.Getenv("SPOTIFY_CLIENT_ID")
 	spotifyClientSecret = os.Getenv("SPOTIFY_CLIENT_SECRET")
 	discordWebhookURL = os.Getenv("DISCORD_WEBHOOK_URL")
+	// Load persisted token if available
+	if err := loadTokenFromFile(); err != nil {
+		log.Printf("Warning: could not load token from file: %v", err)
+	} else if globalAccessToken != "" {
+		log.Println("Token loaded successfully from persistent storage")
+		// If token is already expired or about to expire, try to refresh it immediately
+		if time.Now().Add(5 * time.Minute).After(globalTokenExpiry) {
+			log.Println("Loaded token is expired or about to expire, refreshing...")
+			if err := refreshGlobalToken(); err != nil {
+				log.Printf("Failed to refresh token on startup: %v", err)
+			} else {
+				if err := saveTokenToFile(); err != nil {
+					log.Printf("Failed to save refreshed token: %v", err)
+				}
+			}
+		}
+	}
+
+	// Start background token refresh routine
+	startTokenRefreshRoutine()
+
 	// start uploads cleanup: remove files older than configured TTL every configured interval
 	uploadDir := "./web/uploads"
 	// defaults
@@ -119,6 +140,100 @@ var (
 	globalTokenExpiry   time.Time
 	discordWebhookURL   string
 )
+
+// TokenData represents the structure for persisting tokens
+type TokenData struct {
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	Expiry       time.Time `json:"expiry"`
+}
+
+const tokenFilePath = "./data/spotify_token.json"
+
+// loadTokenFromFile loads the stored token from disk
+func loadTokenFromFile() error {
+	data, err := os.ReadFile(tokenFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // No token file yet, that's ok
+		}
+		return err
+	}
+
+	var tokenData TokenData
+	if err := json.Unmarshal(data, &tokenData); err != nil {
+		return err
+	}
+
+	// Only load if token is still valid or can be refreshed
+	if tokenData.RefreshToken != "" {
+		globalAccessToken = tokenData.AccessToken
+		globalRefreshToken = tokenData.RefreshToken
+		globalTokenExpiry = tokenData.Expiry
+		log.Printf("Token loaded from file. Expiry: %s", globalTokenExpiry.Format(time.RFC3339))
+		return nil
+	}
+
+	return nil
+}
+
+// saveTokenToFile saves the current token to disk
+func saveTokenToFile() error {
+	if globalAccessToken == "" || globalRefreshToken == "" {
+		return nil // Nothing to save
+	}
+
+	tokenData := TokenData{
+		AccessToken:  globalAccessToken,
+		RefreshToken: globalRefreshToken,
+		Expiry:       globalTokenExpiry,
+	}
+
+	data, err := json.MarshalIndent(tokenData, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(filepath.Dir(tokenFilePath), 0755); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(tokenFilePath, data, 0600); err != nil {
+		return err
+	}
+
+	log.Printf("Token saved to file")
+	return nil
+}
+
+// startTokenRefreshRoutine starts a background goroutine that periodically checks and refreshes the token
+func startTokenRefreshRoutine() {
+	go func() {
+		for {
+			// Check every minute
+			time.Sleep(1 * time.Minute)
+
+			if globalAccessToken == "" || globalRefreshToken == "" {
+				continue
+			}
+
+			// Refresh if token expires in less than 5 minutes
+			if time.Now().Add(5 * time.Minute).After(globalTokenExpiry) {
+				log.Println("Token is about to expire, refreshing...")
+				if err := refreshGlobalToken(); err != nil {
+					log.Printf("Failed to refresh token in background: %v", err)
+				} else {
+					// Save the refreshed token
+					if err := saveTokenToFile(); err != nil {
+						log.Printf("Failed to save refreshed token: %v", err)
+					}
+				}
+			}
+		}
+	}()
+	log.Println("Token refresh routine started")
+}
 
 // adminLoginHandler initiates Spotify OAuth for server-side token management
 func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -197,12 +312,17 @@ func refreshGlobalToken() error {
 		globalTokenExpiry = time.Now().Add(time.Duration(expiresIn) * time.Second)
 		log.Printf("Token refreshed successfully, expires at %s", globalTokenExpiry.Format(time.RFC3339))
 	}
-	
+
 	// Update refresh token if provided
 	if newRefreshToken, ok := data["refresh_token"].(string); ok && newRefreshToken != "" {
 		globalRefreshToken = newRefreshToken
 	}
-	
+
+	// Save refreshed token to file
+	if err := saveTokenToFile(); err != nil {
+		log.Printf("Failed to save refreshed token to file: %v", err)
+	}
+
 	return nil
 }
 
@@ -334,6 +454,52 @@ func notifyDiscordError(endpoint string, statusCode int, errorMsg string) {
 	}
 }
 
+// notifyDiscordImageGenerated sends a notification to Discord when an image is generated
+func notifyDiscordImageGenerated(title string, itemCount int, imageURL string, r *http.Request) {
+	if discordWebhookURL == "" {
+		return
+	}
+	
+	// Build full URL
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	fullURL := fmt.Sprintf("%s://%s%s", scheme, r.Host, imageURL)
+	
+	message := map[string]interface{}{
+		"content": fmt.Sprintf("🎨 New ranking image generated!\n**Title:** %s\n**Items:** %d\n**URL:** %s", title, itemCount, fullURL),
+		"embeds": []map[string]interface{}{
+			{
+				"title":       title,
+				"description": fmt.Sprintf("Ranking with %d items", itemCount),
+				"color":       3447003, // Blue color
+				"image": map[string]string{
+					"url": fullURL,
+				},
+				"timestamp": time.Now().Format(time.RFC3339),
+			},
+		},
+	}
+	
+	jsonData, _ := json.Marshal(message)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, discordWebhookURL, strings.NewReader(string(jsonData)))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Failed to send Discord notification: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode >= 400 {
+		log.Printf("Discord webhook returned error: %d", resp.StatusCode)
+	} else {
+		log.Println("Discord notification sent successfully for image generation")
+	}
+}
+
 // adminCallbackHandler handles OAuth callback and stores token server-side
 func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if spotifyClientID == "" || spotifyClientSecret == "" {
@@ -398,8 +564,13 @@ func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		globalTokenExpiry = time.Now().Add(time.Duration(expiresIn) * time.Second)
 		log.Printf("Server token acquired successfully, expires at %s", globalTokenExpiry.Format(time.RFC3339))
 		notifyDiscordTokenSuccess(globalTokenExpiry)
+		
+		// Save token to file for persistence
+		if err := saveTokenToFile(); err != nil {
+			log.Printf("Failed to save token to file: %v", err)
+		}
 	}
-	
+
 	http.Redirect(w, r, "/?admin=success", http.StatusFound)
 }
 
@@ -826,6 +997,10 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	
 	// Return relative URL (browser will use correct base)
 	url := "/uploads/" + fn
+	
+	// Send Discord notification
+	go notifyDiscordImageGenerated(req.Title, len(req.Items), url, r)
+	
 	writeJSON(w, http.StatusOK, map[string]string{"url": url})
 }
 

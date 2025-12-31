@@ -56,9 +56,19 @@ Make sure the redirect URL is configured in your Spotify Developer Dashboard:
 
 ### Token Management
 
-- The token is kept in server memory
+- **Persistent Storage**: The token is stored in `./data/spotify_token.json` and persists across Docker restarts
 - **Auto-Refresh**: The token is automatically renewed 5 minutes before expiration
+- **Background Process**: A background routine checks the token every minute and refreshes it when needed
+- **Docker Volume**: The token file is persisted in the `spotify-battle-data` volume
 - A valid token is automatically used for every API request
+
+### Startup Behavior
+
+When the server starts:
+1. It checks if a saved token exists in `./data/spotify_token.json`
+2. If found, the token is loaded into memory
+3. If the token is expired or about to expire, it's automatically refreshed using the refresh token
+4. If no token is found or refresh fails, you need to authenticate once via `/login`
 
 ### Discord Notification
 
@@ -67,6 +77,13 @@ When the token cannot be renewed, a message is sent to the Discord webhook:
 ```
 ⚠️ Spotify token has expired and could not be refreshed. Please re-authenticate at /login
 ```
+
+Additionally, Discord notifications are sent for:
+- ✅ **Successful token acquisition**: When a new token is obtained via `/login`
+- 🎨 **Image generation**: When a ranking image is created, including:
+  - Title of the ranking
+  - Number of items
+  - Direct link to the generated image (with preview embed)
 
 ### Frontend Behavior
 
@@ -77,8 +94,10 @@ When the token cannot be renewed, a message is sent to the Discord webhook:
 
 ⚠️ **Important**: 
 - The `/login` endpoint should be protected in production (e.g., via HTTP Basic Auth or IP whitelist)
-- The token is only kept in server memory and will be lost on restart
-- For production, consider persistent storage (e.g., database or encrypted file)
+- The token is stored in `./data/spotify_token.json` with restricted file permissions (0600)
+- The token file is persisted in a Docker volume and survives container restarts
+- The refresh token allows automatic token renewal without requiring re-authentication
+- **One-time setup**: After the initial login, the token is automatically maintained indefinitely
 
 ## Monitoring
 
