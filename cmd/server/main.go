@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -64,8 +66,8 @@ func main() {
 	// Start background token refresh routine
 	startTokenRefreshRoutine()
 
-	// start uploads cleanup: remove files older than configured TTL every configured interval
-	uploadDir := "./web/uploads"
+	// start results cleanup: remove files older than configured TTL every configured interval
+	resultsDir := "./web/results"
 	// defaults
 	ttlDays := 30
 	intervalHours := 24
@@ -79,7 +81,7 @@ func main() {
 			intervalHours = n
 		}
 	}
-	go startUploadsCleanup(uploadDir, time.Duration(ttlDays)*24*time.Hour, time.Duration(intervalHours)*time.Hour)
+	go startUploadsCleanup(resultsDir, time.Duration(ttlDays)*24*time.Hour, time.Duration(intervalHours)*time.Hour)
 
 	addr := ":8080"
 	http.HandleFunc("/login", cors(adminLoginHandler))
@@ -93,8 +95,8 @@ func main() {
 	http.HandleFunc("/api/playlists/", cors(playlistTracksHandler))
 	http.HandleFunc("/api/token-status", cors(tokenStatusHandler))
 
-	// serve uploaded images
-	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./web/uploads"))))
+	// serve result images
+	http.Handle("/results/", http.StripPrefix("/results/", http.FileServer(http.Dir("./web/results"))))
 
 	// static files - serve built React app from web/dist with SPA fallback
 	http.HandleFunc("/", spaHandler)
@@ -830,7 +832,7 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-// uploadImageHandler accepts a multipart/form-data POST with `file` and saves it under web/uploads
+// uploadImageHandler accepts a multipart/form-data POST with `file` and saves it under web/results
 func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
@@ -848,14 +850,15 @@ func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	// ensure upload dir
-	uploadDir := "./web/uploads"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create upload dir"})
+	resultsDir := "./web/results"
+	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create results dir"})
 		return
 	}
-	// create filename
-	fn := fmt.Sprintf("%d.png", time.Now().UnixNano())
-	full := uploadDir + "/" + fn
+	// create filename with random string
+	randomStr := generateRandomString(8)
+	fn := fmt.Sprintf("upload_%s.png", randomStr)
+	full := resultsDir + "/" + fn
 	out, err := os.Create(full)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create file"})
@@ -867,7 +870,7 @@ func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// return a public URL path relative to web root
-	url := "/uploads/" + fn
+	url := "/results/" + fn
 	writeJSON(w, http.StatusOK, map[string]string{"url": url})
 }
 
@@ -879,8 +882,9 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	var req struct {
-		Title    string            `json:"title"`
-		Items    []struct {
+		Title      string `json:"title"`
+		AlbumID    string `json:"albumId"`
+		Items      []struct {
 			Rank  int    `json:"rank"`
 			Name  string `json:"name"`
 			Score int    `json:"score"`
@@ -894,9 +898,9 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	uploadDir := "./web/uploads"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create upload dir"})
+	resultsDir := "./web/results"
+	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create results dir"})
 		return
 	}
 	
@@ -980,8 +984,14 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Save to file
-	fn := fmt.Sprintf("%d.png", time.Now().UnixNano())
-	full := filepath.Join(uploadDir, fn)
+	// Generate filename: albumId_randomstring.png
+	albumIDSafe := sanitizeFilename(req.AlbumID)
+	if albumIDSafe == "" {
+		albumIDSafe = "unknown"
+	}
+	randomStr := generateRandomString(8)
+	fn := fmt.Sprintf("%s_%s.png", albumIDSafe, randomStr)
+	full := filepath.Join(resultsDir, fn)
 	
 	f, err := os.Create(full)
 	if err != nil {
@@ -996,7 +1006,7 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Return relative URL (browser will use correct base)
-	url := "/uploads/" + fn
+	url := "/results/" + fn
 	
 	// Send Discord notification
 	go notifyDiscordImageGenerated(req.Title, len(req.Items), url, r)
@@ -1014,6 +1024,39 @@ func addLabel(img *image.RGBA, x, y int, label string, col color.Color) {
 		Dot:  point,
 	}
 	d.DrawString(label)
+}
+
+// generateRandomString generates a cryptographically secure random hex string
+func generateRandomString(length int) string {
+	bytes := make([]byte, length/2+1)
+	if _, err := rand.Read(bytes); err != nil {
+		// Fallback to timestamp if crypto/rand fails
+		return fmt.Sprintf("%x", time.Now().UnixNano())[:length]
+	}
+	return hex.EncodeToString(bytes)[:length]
+}
+
+// sanitizeFilename removes/replaces characters that are unsafe for filenames
+func sanitizeFilename(s string) string {
+	// Replace common unsafe characters with underscore
+	replacer := strings.NewReplacer(
+		"/", "_",
+		"\\", "_",
+		":", "_",
+		"*", "_",
+		"?", "_",
+		"\"", "_",
+		"<", "_",
+		">", "_",
+		"|", "_",
+		" ", "_",
+	)
+	clean := replacer.Replace(s)
+	// Limit length
+	if len(clean) > 50 {
+		clean = clean[:50]
+	}
+	return clean
 }
 
 // startUploadsCleanup starts a background goroutine that periodically
@@ -1125,8 +1168,8 @@ func spaHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	// Fallback to index.html for SPA routing (except for /api and /uploads)
-	if !strings.HasPrefix(r.URL.Path, "/api") && !strings.HasPrefix(r.URL.Path, "/uploads") {
+	// Fallback to index.html for SPA routing (except for /api and /results)
+	if !strings.HasPrefix(r.URL.Path, "/api") && !strings.HasPrefix(r.URL.Path, "/results") {
 		indexPath := filepath.Join(staticDir, "index.html")
 		if _, err := os.Stat(indexPath); err == nil {
 			http.ServeFile(w, r, indexPath)

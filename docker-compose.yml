@@ -20,8 +20,8 @@ services:
       - UPLOAD_TTL_DAYS=${UPLOAD_TTL_DAYS:-30}
       - UPLOAD_CLEANUP_INTERVAL_HOURS=${UPLOAD_CLEANUP_INTERVAL_HOURS:-24}
     volumes:
-      # Persist generated images across container restarts
-      - spotify-battle-uploads:/app/web/uploads
+      # Persist generated result images across container restarts
+      - spotify-battle-results:/app/web/results
       # Persist Spotify tokens across container restarts
       - spotify-battle-data:/app/data
     restart: unless-stopped
@@ -33,7 +33,7 @@ services:
       start_period: 40s
 
 volumes:
-  spotify-battle-uploads:
+  spotify-battle-results:
     driver: local
   spotify-battle-data:
     driver: local

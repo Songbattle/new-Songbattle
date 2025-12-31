@@ -29,6 +29,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
         credentials: 'include',
         body: JSON.stringify({
           title: albumName,
+          albumId: album?.id || 'unknown',
           items: items,
           shareUrl: shareUrl || '',
           coverImage: coverImage
