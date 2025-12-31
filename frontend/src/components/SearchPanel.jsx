@@ -2,19 +2,19 @@ import { useState, useEffect } from 'react'
 import SearchColumn from './SearchColumn'
 import api from '../utils/api'
 
-function SearchPanel({ onSelectAlbum, user }) {
+function SearchPanel({ onSelectAlbum, user, tokenStatus }) {
   const [myPlaylists, setMyPlaylists] = useState([])
   const [myAlbums, setMyAlbums] = useState([])
 
   useEffect(() => {
-    if (user) {
+    if (tokenStatus) {
       loadMyPlaylists()
       loadMyAlbums()
     } else {
       setMyPlaylists([])
       setMyAlbums([])
     }
-  }, [user])
+  }, [tokenStatus])
 
   const loadMyPlaylists = async () => {
     try {
@@ -56,12 +56,12 @@ function SearchPanel({ onSelectAlbum, user }) {
           position: 'relative',
         }}
       >
-        <SearchColumn type="album" onSelect={onSelectAlbum} disabled={!user} myItems={myAlbums} />
-        <SearchColumn type="playlist" onSelect={onSelectAlbum} disabled={!user} myItems={myPlaylists} />
+        <SearchColumn type="album" onSelect={onSelectAlbum} disabled={!tokenStatus} myItems={myAlbums} />
+        <SearchColumn type="playlist" onSelect={onSelectAlbum} disabled={!tokenStatus} myItems={myPlaylists} />
       </div>
-      {!user && (
+      {!tokenStatus && (
         <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center', color: 'var(--muted)' }}>
-          Please login with Spotify to search for albums and playlists
+          No function available - No valid Spotify token
         </div>
       )}
     </div>

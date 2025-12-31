@@ -43,6 +43,7 @@ func main() {
 	spotifyClientID = os.Getenv("SPOTIFY_CLIENT_ID")
 	spotifyClientSecret = os.Getenv("SPOTIFY_CLIENT_SECRET")
 	spotifyRedirect = os.Getenv("SPOTIFY_REDIRECT_URL")
+	discordWebhookURL = os.Getenv("DISCORD_WEBHOOK_URL")
 	// start uploads cleanup: remove files older than configured TTL every configured interval
 	uploadDir := "./web/uploads"
 	// defaults
@@ -61,6 +62,8 @@ func main() {
 	go startUploadsCleanup(uploadDir, time.Duration(ttlDays)*24*time.Hour, time.Duration(intervalHours)*time.Hour)
 
 	addr := ":8080"
+	http.HandleFunc("/login", cors(adminLoginHandler))
+	http.HandleFunc("/admin-callback", cors(adminCallbackHandler))
 	http.HandleFunc("/api/login", cors(loginHandler))
 	http.HandleFunc("/api/callback", cors(callbackHandler))
 	http.HandleFunc("/api/me", cors(meHandler))
@@ -73,6 +76,7 @@ func main() {
 	http.HandleFunc("/api/search", cors(searchHandler))
 	http.HandleFunc("/api/albums/", cors(albumTracksHandler))
 	http.HandleFunc("/api/playlists/", cors(playlistTracksHandler))
+	http.HandleFunc("/api/token-status", cors(tokenStatusHandler))
 
 	// serve uploaded images
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./web/uploads"))))
@@ -116,6 +120,10 @@ var (
 	spotifyClientID     string
 	spotifyClientSecret string
 	spotifyRedirect     string
+	globalAccessToken   string
+	globalRefreshToken  string
+	globalTokenExpiry   time.Time
+	discordWebhookURL   string
 )
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +134,190 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	scopes := "user-read-private user-read-email playlist-read-private playlist-read-collaborative user-library-read"
 	url := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s", spotifyClientID, urlEncode(scopes), urlEncode(spotifyRedirect))
 	http.Redirect(w, r, url, http.StatusFound)
+}
+
+// adminLoginHandler initiates Spotify OAuth for server-side token management
+func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
+	if spotifyClientID == "" || spotifyRedirect == "" {
+		writeJSON(w, http.StatusOK, map[string]interface{}{"mock": true, "message": "No Spotify creds set; using mock mode"})
+		return
+	}
+	scopes := "user-read-private user-read-email playlist-read-private playlist-read-collaborative user-library-read"
+	// Use a different redirect for admin login to store token server-side
+	adminRedirect := spotifyRedirect
+	if strings.Contains(adminRedirect, "/callback") {
+		adminRedirect = strings.Replace(adminRedirect, "/callback", "/admin-callback", 1)
+	}
+	url := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s", spotifyClientID, urlEncode(scopes), urlEncode(adminRedirect))
+	http.Redirect(w, r, url, http.StatusFound)
+}
+
+// tokenStatusHandler returns whether the server has a valid token
+func tokenStatusHandler(w http.ResponseWriter, r *http.Request) {
+	hasToken := globalAccessToken != "" && time.Now().Before(globalTokenExpiry)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"hasToken": hasToken,
+		"expiry":   globalTokenExpiry.Format(time.RFC3339),
+	})
+}
+
+// refreshGlobalToken refreshes the global Spotify access token
+func refreshGlobalToken() error {
+	if globalRefreshToken == "" {
+		return fmt.Errorf("no refresh token available")
+	}
+	
+	form := urlEncodeForm(map[string]string{
+		"grant_type":    "refresh_token",
+		"refresh_token": globalRefreshToken,
+	})
+	
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://accounts.spotify.com/api/token", strings.NewReader(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(spotifyClientID, spotifyClientSecret)
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		// Token refresh failed - notify Discord
+		notifyDiscordTokenExpired()
+		return fmt.Errorf("token refresh failed: %s", string(body))
+	}
+	
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		return err
+	}
+	
+	accessToken, _ := data["access_token"].(string)
+	expiresIn, _ := data["expires_in"].(float64)
+	
+	if accessToken != "" {
+		globalAccessToken = accessToken
+		globalTokenExpiry = time.Now().Add(time.Duration(expiresIn) * time.Second)
+		log.Printf("Token refreshed successfully, expires at %s", globalTokenExpiry.Format(time.RFC3339))
+	}
+	
+	// Update refresh token if provided
+	if newRefreshToken, ok := data["refresh_token"].(string); ok && newRefreshToken != "" {
+		globalRefreshToken = newRefreshToken
+	}
+	
+	return nil
+}
+
+// getValidToken returns a valid access token, refreshing if necessary
+func getValidToken() (string, error) {
+	if globalAccessToken == "" {
+		return "", fmt.Errorf("no token available")
+	}
+	
+	// Refresh if token expires in less than 5 minutes
+	if time.Now().Add(5 * time.Minute).After(globalTokenExpiry) {
+		if err := refreshGlobalToken(); err != nil {
+			return "", err
+		}
+	}
+	
+	return globalAccessToken, nil
+}
+
+// notifyDiscordTokenExpired sends a notification to Discord when token expires
+func notifyDiscordTokenExpired() {
+	if discordWebhookURL == "" {
+		return
+	}
+	
+	message := map[string]interface{}{
+		"content": "⚠️ Spotify token has expired and could not be refreshed. Please re-authenticate at /login",
+	}
+	
+	jsonData, _ := json.Marshal(message)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, discordWebhookURL, strings.NewReader(string(jsonData)))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Failed to send Discord notification: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode >= 400 {
+		log.Printf("Discord webhook returned error: %d", resp.StatusCode)
+	} else {
+		log.Println("Discord notification sent successfully")
+	}
+}
+
+// adminCallbackHandler handles OAuth callback and stores token server-side
+func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	if spotifyClientID == "" || spotifyClientSecret == "" || spotifyRedirect == "" {
+		globalAccessToken = "mock-token"
+		globalTokenExpiry = time.Now().Add(24 * time.Hour)
+		http.Redirect(w, r, "/?admin=success", http.StatusFound)
+		return
+	}
+	
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing code"})
+		return
+	}
+	
+	// Exchange code for token
+	adminRedirect := spotifyRedirect
+	if strings.Contains(adminRedirect, "/callback") {
+		adminRedirect = strings.Replace(adminRedirect, "/callback", "/admin-callback", 1)
+	}
+	
+	form := urlEncodeForm(map[string]string{
+		"grant_type":   "authorization_code",
+		"code":         code,
+		"redirect_uri": adminRedirect,
+	})
+	
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://accounts.spotify.com/api/token", strings.NewReader(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(spotifyClientID, spotifyClientSecret)
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+	
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		w.WriteHeader(resp.StatusCode)
+		w.Write(body)
+		return
+	}
+	
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "invalid token response"})
+		return
+	}
+	
+	accessToken, _ := data["access_token"].(string)
+	refreshToken, _ := data["refresh_token"].(string)
+	expiresIn, _ := data["expires_in"].(float64)
+	
+	if accessToken != "" {
+		globalAccessToken = accessToken
+		globalRefreshToken = refreshToken
+		globalTokenExpiry = time.Now().Add(time.Duration(expiresIn) * time.Second)
+		log.Printf("Server token acquired successfully, expires at %s", globalTokenExpiry.Format(time.RFC3339))
+	}
+	
+	http.Redirect(w, r, "/?admin=success", http.StatusFound)
 }
 
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -177,24 +369,16 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
-	// Check Authorization header
-	auth := r.Header.Get("Authorization")
-	// prefer Authorization header, fallback to cookie
-	token := ""
-	if auth != "" {
-		token = strings.TrimPrefix(auth, "Bearer ")
-	} else if c, err := r.Cookie("access_token"); err == nil {
-		token = c.Value
-	}
-
 	if spotifyClientID == "" || spotifyClientSecret == "" {
 		// mock mode with avatar
 		writeJSON(w, http.StatusOK, map[string]interface{}{"id": "mock-user", "display_name": "Mock User", "images": []map[string]string{{"url": "https://picsum.photos/seed/mock-user/48"}}})
 		return
 	}
 
-	if token == "" {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
+	// Use global token instead of cookie
+	token, err := getValidToken()
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
 		return
 	}
 
@@ -214,11 +398,6 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 
 func myPlaylistsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user's playlists, limit to 5
-	token := ""
-	if c, err := r.Cookie("access_token"); err == nil {
-		token = c.Value
-	}
-
 	if spotifyClientID == "" || spotifyClientSecret == "" {
 		// mock mode - return 5 mock playlists
 		items := []map[string]interface{}{}
@@ -235,8 +414,9 @@ func myPlaylistsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if token == "" {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
+	token, err := getValidToken()
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
 		return
 	}
 
@@ -256,11 +436,6 @@ func myPlaylistsHandler(w http.ResponseWriter, r *http.Request) {
 
 func myAlbumsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user's saved albums, limit to 5
-	token := ""
-	if c, err := r.Cookie("access_token"); err == nil {
-		token = c.Value
-	}
-
 	if spotifyClientID == "" || spotifyClientSecret == "" {
 		// mock mode - return 5 mock albums
 		items := []map[string]interface{}{}
@@ -279,8 +454,9 @@ func myAlbumsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if token == "" {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
+	token, err := getValidToken()
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
 		return
 	}
 
@@ -301,37 +477,39 @@ func myAlbumsHandler(w http.ResponseWriter, r *http.Request) {
 func searchHandler(w http.ResponseWriter, r *http.Request) {
 	// If client supplies a full `next` or `previous` URL (Spotify absolute URL), proxy it server-side
 	if nxt := r.URL.Query().Get("next"); nxt != "" {
-		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, nxt, nil)
-		if c, err := r.Cookie("access_token"); err == nil {
-			req.Header.Set("Authorization", "Bearer "+c.Value)
+		token, err := getValidToken()
+		if err == nil {
+			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, nxt, nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			defer resp.Body.Close()
+			body, _ := io.ReadAll(resp.Body)
+			w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+			w.WriteHeader(resp.StatusCode)
+			w.Write(body)
 		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
-		w.WriteHeader(resp.StatusCode)
-		w.Write(body)
 		return
 	}
 	if prev := r.URL.Query().Get("previous"); prev != "" {
-		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, prev, nil)
-		if c, err := r.Cookie("access_token"); err == nil {
-			req.Header.Set("Authorization", "Bearer "+c.Value)
+		token, err := getValidToken()
+		if err == nil {
+			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, prev, nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			defer resp.Body.Close()
+			body, _ := io.ReadAll(resp.Body)
+			w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+			w.WriteHeader(resp.StatusCode)
+			w.Write(body)
 		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
-		w.WriteHeader(resp.StatusCode)
-		w.Write(body)
 		return
 	}
 	// support album or playlist search
@@ -405,11 +583,15 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Real Spotify search
+	token, err := getValidToken()
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
+		return
+	}
+	
 	apiURL := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&type=%s&limit=10", urlEncode(q), searchType)
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
-	if c, err := r.Cookie("access_token"); err == nil {
-		req.Header.Set("Authorization", "Bearer "+c.Value)
-	}
+	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -440,11 +622,16 @@ func albumTracksHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"items": tracks})
 		return
 	}
+	
+	token, err := getValidToken()
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
+		return
+	}
+	
 	apiURL := fmt.Sprintf("https://api.spotify.com/v1/albums/%s/tracks", id)
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
-	if c, err := r.Cookie("access_token"); err == nil {
-		req.Header.Set("Authorization", "Bearer "+c.Value)
-	}
+	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -475,11 +662,16 @@ func playlistTracksHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"items": tracks})
 		return
 	}
+	
+	token, err := getValidToken()
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
+		return
+	}
+	
 	apiURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks", id)
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
-	if c, err := r.Cookie("access_token"); err == nil {
-		req.Header.Set("Authorization", "Bearer "+c.Value)
-	}
+	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})

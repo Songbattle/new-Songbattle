@@ -52,10 +52,12 @@ function App() {
   const [votingActive, setVotingActive] = useState(false)
   const [resultsActive, setResultsActive] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
+  const [tokenStatus, setTokenStatus] = useState(false)
 
   useEffect(() => {
     loadMe()
     loadConfig()
+    loadTokenStatus()
     
     // Check URL for privacy page
     if (window.location.pathname === '/privacy') {
@@ -95,8 +97,16 @@ function App() {
     }
   }
 
+  const loadTokenStatus = async () => {
+    try {
+      const status = await api('/api/token-status')
+      setTokenStatus(status && status.hasToken)
+    } catch (e) {
+      setTokenStatus(false)
+    }
+  }
+
   const handleLogout = () => {
-    document.cookie = 'access_token=; Path=/; Max-Age=0'
     localStorage.removeItem('pairs')
     localStorage.removeItem('scores')
     localStorage.removeItem('pairsIndex')
@@ -214,11 +224,11 @@ function App() {
   return (
     <div className={currentAlbum ? 'album-mode' : ''}>
       <div className="container">
-        <Header user={user} onRefresh={loadMe} onLogout={handleLogout} />
+        <Header user={user} onRefresh={loadMe} onLogout={handleLogout} tokenStatus={tokenStatus} />
 
         <div className="centered-content">
           <div>
-            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} user={user} />}
+            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} user={user} tokenStatus={tokenStatus} />}
 
             {currentAlbum && (
               <AlbumView

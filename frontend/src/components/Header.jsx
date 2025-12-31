@@ -1,4 +1,4 @@
-function Header({ user, onRefresh, onLogout }) {
+function Header({ user, onRefresh, onLogout, tokenStatus }) {
   return (
     <header>
       <h1>Spotify Battle</h1>
@@ -25,18 +25,8 @@ function Header({ user, onRefresh, onLogout }) {
             />
           </a>
         )}
-        {!user && (
-          <>
-            <div style={{ color: 'var(--muted)' }}>Not logged in</div>
-            <button onClick={() => (window.location.href = '/api/login')}>
-              Login
-            </button>
-          </>
-        )}
-        {user && (
-          <button className="ghost" onClick={onLogout}>
-            Logout
-          </button>
+        {!tokenStatus && (
+          <div style={{ color: 'var(--muted)', fontSize: '14px' }}>No function available</div>
         )}
       </div>
     </header>
