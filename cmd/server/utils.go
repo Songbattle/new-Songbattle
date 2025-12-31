@@ -38,9 +38,9 @@ func cors(h func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, 
 	}
 }
 
-// urlEncode is a simple URL encoding helper
+// urlEncode is a URL encoding helper that encodes spaces as %20 instead of +
 func urlEncode(s string) string {
-	return url.QueryEscape(s)
+	return url.PathEscape(s)
 }
 
 // urlEncodeForm creates a URL-encoded form string from a map
