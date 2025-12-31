@@ -21,6 +21,16 @@ function Results({ tracks, albumName, shareUrl, album }) {
 
     // Get cover image URL
     const coverImage = album?.images?.[0]?.url || ''
+    
+    // Get album ID - prefer album.id, fallback to extracting from first track
+    let albumId = album?.id
+    if (!albumId && tracks.length > 0) {
+      // Try to extract album ID from first track's album property
+      albumId = tracks[0]?.album?.id
+    }
+    if (!albumId) {
+      albumId = 'unknown'
+    }
 
     try {
       const resp = await fetch('/api/generate-image', {
@@ -29,7 +39,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
         credentials: 'include',
         body: JSON.stringify({
           title: albumName,
-          albumId: album?.id || 'unknown',
+          albumId: albumId,
           items: items,
           shareUrl: shareUrl || '',
           coverImage: coverImage
