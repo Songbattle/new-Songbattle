@@ -3,7 +3,7 @@ import api from '../utils/api'
 
 const PAGE_LIMIT = 10
 
-function SearchColumn({ type, onSelect, disabled, initialSearchQuery }) {
+function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLimit }) {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [results, setResults] = useState([])
@@ -22,7 +22,7 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery }) {
   // Initial search if initialSearchQuery is provided
   useEffect(() => {
     if (initialSearchQuery && !disabled) {
-      fetchSearch(initialSearchQuery, 0)
+      fetchSearch(initialSearchQuery, 0, true)
     }
   }, [initialSearchQuery, disabled])
 
@@ -63,10 +63,10 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery }) {
     setSuggestions([])
     setPage(0)
     setOffset(0)
-    await fetchSearch(q, 0)
+    await fetchSearch(q, 0, false)
   }
 
-  const fetchSearch = async (q, pageOrUrl) => {
+  const fetchSearch = async (q, pageOrUrl, isInitial = false) => {
     const param = isAlbum ? 'album' : 'playlist'
     let url
     if (typeof pageOrUrl === 'string' && pageOrUrl) {
@@ -78,7 +78,8 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery }) {
     } else {
       const pg = pageOrUrl || 0
       const off = pg * PAGE_LIMIT
-      url = `/api/search?${param}=${encodeURIComponent(q)}&offset=${off}&limit=${PAGE_LIMIT}`
+      const limit = isInitial && initialLimit ? initialLimit : PAGE_LIMIT
+      url = `/api/search?${param}=${encodeURIComponent(q)}&offset=${off}&limit=${limit}`
     }
 
     setLoading(true)

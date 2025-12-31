@@ -20,7 +20,7 @@ function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro }) {
           position: 'relative',
         }}
       >
-        <SearchColumn type="album" onSelect={onSelectAlbum} disabled={!tokenStatus} initialSearchQuery="Taylor Swift" />
+        <SearchColumn type="album" onSelect={onSelectAlbum} disabled={!tokenStatus} initialSearchQuery="Taylor Swift" initialLimit={5} />
       </div>
       {!tokenStatus && (
         <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center', color: 'var(--muted)' }}>
