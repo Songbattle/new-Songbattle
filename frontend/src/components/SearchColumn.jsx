@@ -3,8 +3,8 @@ import api from '../utils/api'
 
 const PAGE_LIMIT = 10
 
-function SearchColumn({ type, onSelect, disabled, defaultQuery }) {
-  const [query, setQuery] = useState(defaultQuery || '')
+function SearchColumn({ type, onSelect, disabled, initialSearchQuery }) {
+  const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [results, setResults] = useState([])
   const [page, setPage] = useState(0)
@@ -19,12 +19,12 @@ function SearchColumn({ type, onSelect, disabled, defaultQuery }) {
   const label = isAlbum ? 'Albums' : 'Playlists'
   const placeholder = isAlbum ? 'Search album...' : 'Search playlist...'
 
-  // Initial search if defaultQuery is provided
+  // Initial search if initialSearchQuery is provided
   useEffect(() => {
-    if (defaultQuery && !disabled) {
-      handleSearch()
+    if (initialSearchQuery && !disabled) {
+      fetchSearch(initialSearchQuery, 0)
     }
-  }, [defaultQuery, disabled])
+  }, [initialSearchQuery, disabled])
 
   const handleInputChange = (e) => {
     if (disabled) return

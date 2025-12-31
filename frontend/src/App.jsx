@@ -211,7 +211,7 @@ function App() {
 
         <div className="centered-content">
           <div>
-            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} />}
+            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} showIntro={!currentAlbum} />}
 
             {currentAlbum && (
               <AlbumView
