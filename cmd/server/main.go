@@ -63,7 +63,6 @@ func main() {
 	addr := ":8080"
 	http.HandleFunc("/login", cors(adminLoginHandler))
 	http.HandleFunc("/admin-callback", cors(adminCallbackHandler))
-	http.HandleFunc("/api/config", cors(configHandler))
 	http.HandleFunc("/api/upload-image", cors(uploadImageHandler))
 	http.HandleFunc("/api/generate-image", cors(generateImageHandler))
 	http.HandleFunc("/api/version", cors(versionHandler))
@@ -635,16 +634,6 @@ func playlistTracksHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.StatusCode)
 	w.Write(body)
-}
-
-// configHandler exposes small runtime config values (e.g. share link) from env
-func configHandler(w http.ResponseWriter, r *http.Request) {
-	share := os.Getenv("SHARE_URL")
-	if share == "" {
-		// provide empty string instead of null for JS friendliness
-		share = ""
-	}
-	writeJSON(w, http.StatusOK, map[string]string{"share_url": share})
 }
 
 // versionHandler returns build version information

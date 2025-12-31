@@ -45,7 +45,6 @@ function generateVotingPairs(tracks) {
 }
 
 function App() {
-  const [shareUrl, setShareUrl] = useState('')
   const [currentAlbum, setCurrentAlbum] = useState(null)
   const [tracks, setTracks] = useState([])
   const [votingActive, setVotingActive] = useState(false)
@@ -55,7 +54,6 @@ function App() {
   const [loginInfo, setLoginInfo] = useState(null)
 
   useEffect(() => {
-    loadConfig()
     loadTokenStatus()
     checkLoginResponse()
     
@@ -90,15 +88,6 @@ function App() {
       window.history.pushState({}, '', '/')
     }
   }, [showPrivacy])
-
-  const loadConfig = async () => {
-    try {
-      const cfg = await api('/api/config')
-      if (cfg && cfg.share_url) setShareUrl(cfg.share_url)
-    } catch (e) {
-      /* ignore */
-    }
-  }
 
   const loadTokenStatus = async () => {
     try {
@@ -263,7 +252,6 @@ function App() {
               <Results
                 tracks={tracks}
                 albumName={currentAlbum?.name || 'Results'}
-                shareUrl={shareUrl}
                 album={currentAlbum}
               />
             )}

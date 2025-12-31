@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function Results({ tracks, albumName, shareUrl, album }) {
+function Results({ tracks, albumName, album }) {
   const [imageUrl, setImageUrl] = useState(null)
   const [uploadedUrl, setUploadedUrl] = useState(null)
   const [rankedItems, setRankedItems] = useState([])
@@ -30,7 +30,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
         body: JSON.stringify({
           title: albumName,
           items: items,
-          shareUrl: shareUrl || '',
+          shareUrl: '',
           coverImage: coverImage
         })
       })
@@ -52,7 +52,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
   }
 
   const handleCopyLink = async () => {
-    let linkToCopy = imageUrl || shareUrl || window.location.href
+    let linkToCopy = imageUrl || window.location.href
     // Convert relative URL to absolute for sharing
     if (imageUrl && imageUrl.startsWith('/')) {
       linkToCopy = window.location.origin + imageUrl
