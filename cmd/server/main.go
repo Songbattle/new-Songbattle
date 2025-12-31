@@ -243,6 +243,34 @@ func notifyDiscordTokenExpired() {
 	}
 }
 
+// notifyDiscordTokenSuccess sends a notification to Discord when new token is acquired
+func notifyDiscordTokenSuccess(expiryTime time.Time) {
+	if discordWebhookURL == "" {
+		return
+	}
+	
+	message := map[string]interface{}{
+		"content": fmt.Sprintf("✅ New Spotify token acquired successfully. Expires at %s", expiryTime.Format(time.RFC3339)),
+	}
+	
+	jsonData, _ := json.Marshal(message)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, discordWebhookURL, strings.NewReader(string(jsonData)))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Failed to send Discord notification: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode >= 400 {
+		log.Printf("Discord webhook returned error: %d", resp.StatusCode)
+	} else {
+		log.Println("Discord notification sent successfully")
+	}
+}
+
 // adminCallbackHandler handles OAuth callback and stores token server-side
 func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if spotifyClientID == "" || spotifyClientSecret == "" {
@@ -306,6 +334,7 @@ func adminCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		globalRefreshToken = refreshToken
 		globalTokenExpiry = time.Now().Add(time.Duration(expiresIn) * time.Second)
 		log.Printf("Server token acquired successfully, expires at %s", globalTokenExpiry.Format(time.RFC3339))
+		notifyDiscordTokenSuccess(globalTokenExpiry)
 	}
 	
 	http.Redirect(w, r, "/?admin=success", http.StatusFound)
