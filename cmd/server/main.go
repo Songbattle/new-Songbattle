@@ -15,6 +15,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -1065,13 +1066,13 @@ func cleanupUploadsOnce(dir string, olderThan time.Duration) {
 
 // --- small util functions ---
 func urlEncode(s string) string {
-	return strings.ReplaceAll(s, " ", "%20")
+	return url.QueryEscape(s)
 }
 
 func urlEncodeForm(m map[string]string) string {
 	parts := []string{}
 	for k, v := range m {
-		parts = append(parts, fmt.Sprintf("%s=%s", k, urlEncode(v)))
+		parts = append(parts, fmt.Sprintf("%s=%s", k, url.QueryEscape(v)))
 	}
 	return strings.Join(parts, "&")
 }
