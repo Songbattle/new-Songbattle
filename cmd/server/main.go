@@ -87,7 +87,6 @@ func main() {
 	http.HandleFunc("/login", cors(adminLoginHandler))
 	http.HandleFunc("/admin-callback", cors(adminCallbackHandler))
 	http.HandleFunc("/api/config", cors(configHandler))
-	http.HandleFunc("/api/upload-image", cors(uploadImageHandler))
 	http.HandleFunc("/api/generate-image", cors(generateImageHandler))
 	http.HandleFunc("/api/version", cors(versionHandler))
 	http.HandleFunc("/api/search", cors(searchHandler))
@@ -830,48 +829,6 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 		response["tag"] = GitTag
 	}
 	writeJSON(w, http.StatusOK, response)
-}
-
-// uploadImageHandler accepts a multipart/form-data POST with `file` and saves it under web/results
-func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
-		return
-	}
-	// parse multipart
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid multipart"})
-		return
-	}
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing file"})
-		return
-	}
-	defer file.Close()
-	// ensure upload dir
-	resultsDir := "./web/results"
-	if err := os.MkdirAll(resultsDir, 0755); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create results dir"})
-		return
-	}
-	// create filename with random string
-	randomStr := generateRandomString(8)
-	fn := fmt.Sprintf("upload_%s.png", randomStr)
-	full := resultsDir + "/" + fn
-	out, err := os.Create(full)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot create file"})
-		return
-	}
-	defer out.Close()
-	if _, err := io.Copy(out, file); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot save file"})
-		return
-	}
-	// return a public URL path relative to web root
-	url := "/results/" + fn
-	writeJSON(w, http.StatusOK, map[string]string{"url": url})
 }
 
 // generateImageHandler generates a results image server-side
