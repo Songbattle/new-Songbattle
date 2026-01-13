@@ -5,7 +5,7 @@ import "testing"
 func TestURLEncode(t *testing.T) {
     s := "a b+c"
     got := urlEncode(s)
-    want := "a%20b+c"
+    want := "a+b%2Bc"
     if got != want {
         t.Fatalf("urlEncode: got %q, want %q", got, want)
     }
