@@ -98,7 +98,7 @@ function Privacy() {
           <p>
             If you have any questions about this Privacy Policy, please visit our{' '}
             <a 
-              href="https://github.com/Songbattle/Spotify-Battle" 
+              href="https://github.com/Songbattle/new-Songbattle" 
               target="_blank" 
               rel="noopener noreferrer"
               className="privacy-link"
