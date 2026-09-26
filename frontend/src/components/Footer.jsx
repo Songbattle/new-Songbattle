@@ -45,7 +45,7 @@ function Footer() {
           )}
         </div>
         <div className="footer-text">
-          © {new Date().getFullYear()} Spotify Battle
+          {new Date().getFullYear()} Songbattle
         </div>
         <div className="footer-disclaimer">
           This project is not affiliated with, endorsed by, or in any way officially connected with Spotify AB.
