@@ -32,7 +32,7 @@ function Footer() {
           <span className="version-label">Version:</span>{' '}
           {version ? (
             <a 
-              href={`https://github.com/T0biii/Spotify-Battle/commit/${version.commit}`}
+              href={`https://github.com/Songbattle/new-Songbattle/commit/${version.commit}`}
               target="_blank"
               rel="noopener noreferrer"
               className="footer-link"
