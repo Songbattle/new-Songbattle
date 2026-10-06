@@ -5,4 +5,5 @@
 *.log
 node_modules/
 dist/
-web/uploads//data/
+web/uploads/
+/data/
