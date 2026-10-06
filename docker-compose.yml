@@ -19,6 +19,14 @@ services:
       # Optional: Image cleanup settings (defaults shown)
       - UPLOAD_TTL_DAYS=${UPLOAD_TTL_DAYS:-30}
       - UPLOAD_CLEANUP_INTERVAL_HOURS=${UPLOAD_CLEANUP_INTERVAL_HOURS:-24}
+      # Optional: user login (Google / Apple), see .env.example
+      - PUBLIC_URL=${PUBLIC_URL:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID:-}
+      - APPLE_TEAM_ID=${APPLE_TEAM_ID:-}
+      - APPLE_KEY_ID=${APPLE_KEY_ID:-}
+      - APPLE_PRIVATE_KEY=${APPLE_PRIVATE_KEY:-}
     volumes:
       # Persist generated result images across container restarts
       - spotify-battle-results:/app/web/results

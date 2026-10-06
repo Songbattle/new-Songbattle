@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function Results({ tracks, albumName, shareUrl, album }) {
+function Results({ tracks, albumName, shareUrl, album, loggedIn }) {
   const [imageUrl, setImageUrl] = useState(null)
   const [uploadedUrl, setUploadedUrl] = useState(null)
   const [rankedItems, setRankedItems] = useState([])
@@ -88,7 +88,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
           const imgResponse = await fetch(window.location.origin + uploadedUrl)
           if (imgResponse.ok) {
             const blob = await imgResponse.blob()
-            shareFile = new File([blob], 'spotify-battle.png', { type: 'image/png' })
+            shareFile = new File([blob], 'song-battle.png', { type: 'image/png' })
           }
         }
       } catch (e) {
@@ -97,7 +97,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
 
       try {
         const shareData = {
-          title: 'Spotify Battle Results',
+          title: 'Song Battle Results',
           text: shareText,
           url: window.location.href,
         }
@@ -127,6 +127,11 @@ function Results({ tracks, albumName, shareUrl, album }) {
     <div style={{ marginTop: '14px' }}>
       <div className="card results">
         <h3>Results</h3>
+        <p style={{ color: 'var(--muted)', fontSize: '13px', margin: '0 0 8px' }}>
+          {loggedIn
+            ? 'Saved to "My battles" (kept for 30 days).'
+            : 'Sign in (optional) to save your battles for 30 days.'}
+        </p>
         {ranked.map(([id, sc], i) => {
           const t = tracks.find((tt) => tt.id === id)
           return (

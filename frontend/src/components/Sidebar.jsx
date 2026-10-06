@@ -9,7 +9,7 @@ function Sidebar() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'spotify-battle-results.json'
+    a.download = 'song-battle-results.json'
     a.click()
   }
 

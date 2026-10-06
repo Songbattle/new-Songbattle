@@ -1,11 +1,11 @@
-const api = (path) =>
-  fetch(path, { credentials: 'include' })
+const api = (path, options = {}) =>
+  fetch(path, { credentials: 'include', ...options })
     .then(async (r) => {
       // Check for rate limit (429)
       if (r.status === 429) {
         // Trigger rate limit notification
         window.dispatchEvent(new CustomEvent('spotify-rate-limit', {
-          detail: { message: 'Spotify rate limit reached. Please try again later.' }
+          detail: { message: 'Rate limit reached. Please try again later.' }
         }))
         throw new Error('Rate limit exceeded')
       }

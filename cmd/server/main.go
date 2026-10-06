@@ -84,6 +84,21 @@ func main() {
 	}
 	go startUploadsCleanup(resultsDir, time.Duration(ttlDays)*24*time.Hour, time.Duration(intervalHours)*time.Hour)
 
+	// optional accounts: saved battles live exactly as long as their screenshots
+	battleRetention = time.Duration(ttlDays) * 24 * time.Hour
+	st, err := NewStore("./data/users.json", resultsDir)
+	if err != nil {
+		log.Fatalf("cannot load user store: %v", err)
+	}
+	appStore = st
+	initAuth()
+	go func() {
+		for {
+			appStore.Cleanup(battleRetention)
+			time.Sleep(time.Duration(intervalHours) * time.Hour)
+		}
+	}()
+
 	addr := ":8080"
 	http.HandleFunc("/login", cors(adminLoginHandler))
 	http.HandleFunc("/admin-callback", cors(adminCallbackHandler))
@@ -94,6 +109,13 @@ func main() {
 	http.HandleFunc("/api/albums/", cors(albumTracksHandler))
 	http.HandleFunc("/api/playlists/", cors(playlistTracksHandler))
 	http.HandleFunc("/api/token-status", cors(tokenStatusHandler))
+	http.HandleFunc("/api/auth/providers", cors(authProvidersHandler))
+	http.HandleFunc("/api/auth/", authRouteHandler)
+	http.HandleFunc("/api/me", meHandler)
+	http.HandleFunc("/api/logout", logoutHandler)
+	http.HandleFunc("/api/account", accountHandler)
+	http.HandleFunc("/api/battles", battlesHandler)
+	http.HandleFunc("/api/battles/", battlesHandler)
 
 	// serve result images
 	http.Handle("/results/", http.StripPrefix("/results/", http.FileServer(http.Dir("./web/results"))))
@@ -141,6 +163,7 @@ var (
 	globalRefreshToken  string
 	globalTokenExpiry   time.Time
 	discordWebhookURL   string
+	battleRetention     = 30 * 24 * time.Hour
 )
 
 // TokenData represents the structure for persisting tokens
@@ -965,6 +988,20 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	
 	// Return relative URL (browser will use correct base)
 	url := "/results/" + fn
+
+	// Save the battle for logged-in users (optional accounts)
+	if u, _, ok := currentUser(r); ok {
+		items := make([]BattleItem, 0, len(req.Items))
+		for _, it := range req.Items {
+			items = append(items, BattleItem{Rank: it.Rank, Name: it.Name})
+		}
+		if err := appStore.AddBattle(Battle{
+			ID: generateRandomString(16), UserID: u.ID, Title: req.Title,
+			CoverImage: req.CoverImage, Items: items, Image: fn, CreatedAt: time.Now(),
+		}); err != nil {
+			log.Printf("could not save battle: %v", err)
+		}
+	}
 	
 	// Send Discord notification
 	go notifyDiscordImageGenerated(req.Title, len(req.Items), url, r)
