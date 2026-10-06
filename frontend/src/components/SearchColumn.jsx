@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../utils/api'
+import { useI18n } from '../i18n'
 
 const PAGE_LIMIT = 10
 
 function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLimit }) {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [results, setResults] = useState([])
@@ -16,8 +18,8 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
   const debounceTimer = useRef(null)
 
   const isAlbum = type === 'album'
-  const label = isAlbum ? 'Albums' : 'Playlists'
-  const placeholder = isAlbum ? 'Search album...' : 'Search playlist...'
+  const label = isAlbum ? t('search.albums') : t('search.playlists')
+  const placeholder = isAlbum ? t('search.placeholderAlbum') : t('search.placeholderPlaylist')
 
   // Initial search if initialSearchQuery is provided
   useEffect(() => {
@@ -59,7 +61,7 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
 
   const handleSearch = async () => {
     const q = query.trim()
-    if (!q) return alert('Please enter a search term')
+    if (!q) return alert(t('search.enterTerm'))
     setSuggestions([])
     setPage(0)
     setOffset(0)
@@ -168,7 +170,7 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
             style={disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
           />
           <button onClick={handleSearch} disabled={loading || disabled}>
-            Search
+            {t('search.button')}
           </button>
         </div>
 
@@ -188,7 +190,7 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
                 className="suggestion"
                 onClick={() => handleSuggestionClick(item, false)}
               >
-                <img src={img} alt="cover" />
+                <img src={img} alt={t('search.coverAlt')} />
                 <div className="meta">
                   <strong>{item.name}</strong>
                   <div style={{ color: 'var(--muted)', fontSize: '13px' }}>
@@ -202,7 +204,7 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
                     handleSuggestionClick(item, true)
                   }}
                 >
-                  Open
+                  {t('search.open')}
                 </button>
               </div>
             )
@@ -225,7 +227,7 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
               return (
                 <div key={item.id} className="album">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <img className="cover" src={img} alt="cover" />
+                    <img className="cover" src={img} alt={t('search.coverAlt')} />
                     <div className="meta">
                       <strong>{item.name}</strong>
                       <div className="muted">{subtitle}</div>
@@ -238,7 +240,7 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
                         onSelect({ ...item, type: isAlbum ? 'album' : 'playlist' })
                       }
                     >
-                      Select
+                      {t('search.select')}
                     </button>
                   </div>
                 </div>
@@ -259,19 +261,23 @@ function SearchColumn({ type, onSelect, disabled, initialSearchQuery, initialLim
               onClick={handlePrev}
               disabled={offset <= 0}
             >
-              Previous
+              {t('search.previous')}
             </button>
             <div style={{ color: 'var(--muted)' }}>
               {total <= 0
-                ? '0 of 0'
-                : `${Math.min(offset + 1, total)}–${Math.min(offset + PAGE_LIMIT, total)} of ${total}`}
+                ? t('search.empty')
+                : t('search.range', {
+                    from: Math.min(offset + 1, total),
+                    to: Math.min(offset + PAGE_LIMIT, total),
+                    total,
+                  })}
             </div>
             <button
               className="ghost"
               onClick={handleNext}
               disabled={offset + PAGE_LIMIT >= total}
             >
-              Next
+              {t('search.next')}
             </button>
           </div>
         </>

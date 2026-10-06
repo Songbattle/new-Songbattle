@@ -8,6 +8,7 @@ import Results from './components/Results'
 import Sidebar from './components/Sidebar'
 import Footer from './components/Footer'
 import Privacy from './components/Privacy'
+import { useI18n } from './i18n'
 
 // Efficient merge-sort based voting - only necessary comparisons
 function generateVotingPairs(tracks) {
@@ -45,6 +46,7 @@ function generateVotingPairs(tracks) {
 }
 
 function App() {
+  const { t } = useI18n()
   const [shareUrl, setShareUrl] = useState('')
   const [currentAlbum, setCurrentAlbum] = useState(null)
   const [tracks, setTracks] = useState([])
@@ -61,7 +63,7 @@ function App() {
     
     // Listen for rate limit events
     const handleRateLimit = (event) => {
-      setLoginInfo({ type: 'warning', message: event.detail.message })
+      setLoginInfo({ type: 'warning', messageKey: event.detail.messageKey, params: event.detail.params })
       setTimeout(() => setLoginInfo(null), 10000)
     }
     window.addEventListener('spotify-rate-limit', handleRateLimit)
@@ -112,7 +114,7 @@ function App() {
   const checkLoginResponse = () => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('admin') === 'success') {
-      setLoginInfo({ type: 'success', message: 'Login successful! Token has been acquired.' })
+      setLoginInfo({ type: 'success', messageKey: 'login.success' })
       // Clear URL parameter
       window.history.replaceState({}, '', window.location.pathname)
       // Clear message after 5 seconds
@@ -262,7 +264,7 @@ function App() {
             {resultsActive && (
               <Results
                 tracks={tracks}
-                albumName={currentAlbum?.name || 'Results'}
+                albumName={currentAlbum?.name || t('results.default')}
                 shareUrl={shareUrl}
                 album={currentAlbum}
               />

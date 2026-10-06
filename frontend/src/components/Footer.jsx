@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import api from '../utils/api'
+import { useI18n } from '../i18n'
 
 function Footer() {
+  const { t } = useI18n()
   const [version, setVersion] = useState(null)
 
   useEffect(() => {
@@ -26,10 +28,10 @@ function Footer() {
     <footer className="footer">
       <div className="footer-content">
         <div className="footer-links">
-          <a href="/privacy" className="footer-link">Privacy Policy</a>
+          <a href="/privacy" className="footer-link">{t('footer.privacy')}</a>
         </div>
         <div className="footer-version">
-          <span className="version-label">Version:</span>{' '}
+          <span className="version-label">{t('footer.version')}</span>{' '}
           {version ? (
             <a 
               href={`https://github.com/Songbattle/new-Songbattle/commit/${version.commit}`}
@@ -48,7 +50,7 @@ function Footer() {
           {new Date().getFullYear()} Songbattle
         </div>
         <div className="footer-disclaimer">
-          This project is not affiliated with, endorsed by, or in any way officially connected with Spotify AB.
+          {t('footer.disclaimer')}
         </div>
       </div>
     </footer>

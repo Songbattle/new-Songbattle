@@ -19,6 +19,15 @@ services:
       # Optional: Image cleanup settings (defaults shown)
       - UPLOAD_TTL_DAYS=${UPLOAD_TTL_DAYS:-30}
       - UPLOAD_CLEANUP_INTERVAL_HOURS=${UPLOAD_CLEANUP_INTERVAL_HOURS:-24}
+
+      # Optional: Rate limiting per client IP (defaults shown)
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-120}
+      - RATE_LIMIT_BURST=${RATE_LIMIT_BURST:-30}
+      - RATE_LIMIT_IMAGE_PER_MINUTE=${RATE_LIMIT_IMAGE_PER_MINUTE:-6}
+      - RATE_LIMIT_IMAGE_BURST=${RATE_LIMIT_IMAGE_BURST:-3}
+      # Set to true behind a reverse proxy (Traefik) to use the real client IP
+      - TRUST_PROXY=${TRUST_PROXY:-false}
+      - CLIENT_IP_HEADER=${CLIENT_IP_HEADER:-X-Forwarded-For}
     volumes:
       # Persist generated result images across container restarts
       - spotify-battle-results:/app/web/results

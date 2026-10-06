@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useI18n } from '../i18n'
 
 function Voting({ tracks, onShowResults }) {
+  const { t } = useI18n()
   const [votingIndex, setVotingIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isPlaylistBattle, setIsPlaylistBattle] = useState(false)
@@ -225,16 +227,16 @@ function Voting({ tracks, onShowResults }) {
             ></iframe>
           )}
           <div style={{ marginTop: '10px' }}>
-            <button onClick={() => recordVote(state.aIdx)}>Choose left</button>
+            <button onClick={() => recordVote(state.aIdx)}>{t('voting.chooseLeft')}</button>
           </div>
         </div>
 
         <div className="center-controls">
           <button className="ghost" onClick={() => recordVote([state.aIdx, state.bIdx])}>
-            Both
+            {t('voting.both')}
           </button>
           <button className="ghost" onClick={() => recordVote(null)}>
-            No opinion
+            {t('voting.noOpinion')}
           </button>
         </div>
 
@@ -270,13 +272,16 @@ function Voting({ tracks, onShowResults }) {
             ></iframe>
           )}
           <div style={{ marginTop: '10px' }}>
-            <button onClick={() => recordVote(state.bIdx)}>Choose right</button>
+            <button onClick={() => recordVote(state.bIdx)}>{t('voting.chooseRight')}</button>
           </div>
         </div>
       </div>
 
       <div className="progress">
-        Vote #{votingIndex + 1} — {votingIndex + 1}/{Math.ceil(tracks.length * Math.log2(tracks.length))}
+        {t('voting.progress', {
+          current: votingIndex + 1,
+          total: Math.ceil(tracks.length * Math.log2(tracks.length)),
+        })}
       </div>
     </div>
   )
