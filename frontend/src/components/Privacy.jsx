@@ -3,12 +3,29 @@ function Privacy() {
     <div className="privacy-page">
       <div className="privacy-container">
         <h1>Privacy Policy</h1>
-        <p className="privacy-date">Last updated: December 30, 2025</p>
+        <p className="privacy-date">Last updated: October 6, 2026</p>
         
+        <section className="privacy-section">
+          <h2>Optional Account (Google / Apple)</h2>
+          <p>
+            You can optionally sign in with Google or Apple. We only store the
+            identifier your provider assigns to you - no name, e-mail address or
+            profile data. While signed in, your finished battles (title, ranking
+            and the generated screenshot) are saved and shown in "My battles" for
+            the last 30 days. Older battles and screenshots are deleted automatically.
+          </p>
+          <p>
+            You can delete your account at any time from the account menu. This
+            immediately and permanently removes your account, all saved battles
+            and all of their screenshots. A session cookie is used to keep you
+            signed in.
+          </p>
+        </section>
+
         <section className="privacy-section">
           <h2>Data Collection</h2>
           <p>
-            Spotify Battle does not store or collect any personal user data. 
+            Without an account, Song Battle does not store or collect any personal user data. 
             We do not save your Spotify account information, listening history, 
             or any other personal information.
           </p>
@@ -56,7 +73,7 @@ function Privacy() {
         <section className="privacy-section">
           <h2>Third-Party Services</h2>
           <p>
-            Spotify Battle integrates with Spotify's API. All music data, including 
+            Song Battle integrates with Spotify's API. All music data, including 
             album information, track details, and cover images, are provided directly 
             by Spotify. Your use of Spotify's services is governed by{' '}
             <a 

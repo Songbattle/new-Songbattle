@@ -8,6 +8,7 @@ import Results from './components/Results'
 import Sidebar from './components/Sidebar'
 import Footer from './components/Footer'
 import Privacy from './components/Privacy'
+import Battles from './components/Battles'
 
 // Efficient merge-sort based voting - only necessary comparisons
 function generateVotingPairs(tracks) {
@@ -53,10 +54,14 @@ function App() {
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [tokenStatus, setTokenStatus] = useState(false)
   const [loginInfo, setLoginInfo] = useState(null)
+  const [user, setUser] = useState(null)
+  const [providers, setProviders] = useState({})
+  const [showBattles, setShowBattles] = useState(false)
 
   useEffect(() => {
     loadConfig()
     loadTokenStatus()
+    loadAccount()
     checkLoginResponse()
     
     // Listen for rate limit events
@@ -70,10 +75,14 @@ function App() {
     if (window.location.pathname === '/privacy') {
       setShowPrivacy(true)
     }
+    if (window.location.pathname === '/battles') {
+      setShowBattles(true)
+    }
 
     // Handle browser navigation
     const handlePopState = () => {
       setShowPrivacy(window.location.pathname === '/privacy')
+      setShowBattles(window.location.pathname === '/battles')
     }
     window.addEventListener('popstate', handlePopState)
     return () => {
@@ -90,6 +99,39 @@ function App() {
       window.history.pushState({}, '', '/')
     }
   }, [showPrivacy])
+
+  useEffect(() => {
+    if (showBattles && window.location.pathname !== '/battles') {
+      window.history.pushState({}, '', '/battles')
+    } else if (!showBattles && window.location.pathname === '/battles') {
+      window.history.pushState({}, '', '/')
+    }
+  }, [showBattles])
+
+  const loadAccount = async () => {
+    const [me, prov] = await Promise.all([api('/api/me'), api('/api/auth/providers')])
+    setUser(me && me.loggedIn ? me : null)
+    setProviders(prov && !prov.error ? prov : {})
+  }
+
+  const handleLogout = async () => {
+    await api('/api/logout', { method: 'POST' })
+    setUser(null)
+    setShowBattles(false)
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Delete your account? All saved battles and screenshots will be permanently removed.')) return
+    const res = await api('/api/account', { method: 'DELETE' })
+    if (res && res.ok) {
+      setUser(null)
+      setShowBattles(false)
+      setLoginInfo({ type: 'info', message: 'Your account and all saved battles were deleted.' })
+      setTimeout(() => setLoginInfo(null), 8000)
+    } else {
+      setLoginInfo({ type: 'warning', message: 'Could not delete the account. Please try again.' })
+    }
+  }
 
   const loadConfig = async () => {
     try {
@@ -240,13 +282,27 @@ function App() {
   return (
     <div className={currentAlbum ? 'album-mode' : ''}>
       <div className="container">
-        <Header tokenStatus={tokenStatus} />
+        <Header
+          tokenStatus={tokenStatus}
+          user={user}
+          providers={providers}
+          onLogout={handleLogout}
+          onDeleteAccount={handleDeleteAccount}
+          onShowBattles={() => setShowBattles(true)}
+        />
 
         <div className="centered-content">
           <div>
-            {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} showIntro={!currentAlbum} loginInfo={loginInfo} />}
+            {showBattles && user && (
+              <>
+                <button className="ghost" onClick={() => setShowBattles(false)}>← Back</button>
+                <Battles />
+              </>
+            )}
 
-            {currentAlbum && (
+            {!showBattles && !currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} showIntro={!currentAlbum} loginInfo={loginInfo} />}
+
+            {!showBattles && currentAlbum && (
               <AlbumView
                 album={currentAlbum}
                 tracks={tracks}
@@ -255,21 +311,22 @@ function App() {
               />
             )}
 
-            {votingActive && (
+            {!showBattles && votingActive && (
               <Voting tracks={tracks} onShowResults={handleShowResults} />
             )}
 
-            {resultsActive && (
+            {!showBattles && resultsActive && (
               <Results
                 tracks={tracks}
                 albumName={currentAlbum?.name || 'Results'}
                 shareUrl={shareUrl}
                 album={currentAlbum}
+                loggedIn={!!user}
               />
             )}
           </div>
 
-          {!currentAlbum && <Sidebar />}
+          {!currentAlbum && !showBattles && <Sidebar />}
         </div>
       </div>
       

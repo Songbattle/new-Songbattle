@@ -134,3 +134,14 @@ Response:
 - Check the token status via `/api/token-status`
 - Re-authenticate via `/login` if necessary
 - Verify the Spotify credentials in the `.env` file
+
+# Optional User Login (Google / Apple)
+
+Users can optionally sign in to keep their battles for 30 days (`UPLOAD_TTL_DAYS`).
+Only the provider's user id is stored (in `./data/users.json`, same volume as the Spotify token) - no name or e-mail.
+
+- Providers are enabled by setting their env vars (see `.env.example`); unconfigured providers are hidden in the UI.
+- Set `PUBLIC_URL` (https in production) and register `{PUBLIC_URL}/api/auth/google/callback` and `{PUBLIC_URL}/api/auth/apple/callback` as redirect URIs.
+- Apple: create a Services ID (`APPLE_CLIENT_ID`) and a Sign in with Apple key (`.p8`, `APPLE_KEY_ID`, `APPLE_TEAM_ID`).
+- Endpoints: `GET /api/me`, `POST /api/logout`, `GET /api/battles`, `DELETE /api/battles/{id}`, `DELETE /api/account`.
+- Deleting the account removes the user, sessions, all saved battles and their screenshots. Battles/screenshots older than the retention are removed automatically.
