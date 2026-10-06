@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import SearchColumn from './SearchColumn'
+import { useI18n } from '../i18n'
 
 function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro, loginInfo }) {
+  const { t } = useI18n()
   const getInfoStyle = () => {
     if (!loginInfo) return {}
     
@@ -28,13 +30,13 @@ function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro, loginInfo })
     <div className="card">
       {loginInfo && (
         <div style={getInfoStyle()}>
-          {loginInfo.message}
+          {loginInfo.messageKey ? t(loginInfo.messageKey, loginInfo.params) : loginInfo.message}
         </div>
       )}
       {showIntro && tokenStatus && (
         <div style={{ marginBottom: '20px', padding: '16px', background: 'rgba(29, 185, 84, 0.1)', borderRadius: '8px', textAlign: 'center', color: '#1db954', fontSize: '14px', lineHeight: '1.6' }}>
-          <strong>Welcome to Spotify Battle!</strong><br />
-          Search and select an album below to start comparing tracks and find your favorites.
+          <strong>{t('search.welcomeTitle')}</strong><br />
+          {t('search.welcomeText')}
         </div>
       )}
       <div
@@ -51,7 +53,7 @@ function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro, loginInfo })
       </div>
       {!tokenStatus && (
         <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center', color: 'var(--muted)' }}>
-          No function available - No valid Spotify token
+          {t('search.noToken')}
         </div>
       )}
     </div>

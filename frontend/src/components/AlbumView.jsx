@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useI18n } from '../i18n'
 
 function AlbumView({ album, tracks, onBack, votingActive }) {
+  const { t } = useI18n()
   const [showTracks, setShowTracks] = useState(false)
 
   const coverImage = album.images?.[0]?.url || `https://picsum.photos/seed/${album.id}/64`
@@ -31,26 +33,26 @@ function AlbumView({ album, tracks, onBack, votingActive }) {
         </div>
         <div>
           <button className="ghost" onClick={onBack}>
-            Back to Search
+            {t('album.back')}
           </button>
         </div>
       </div>
 
       <div className="card tracks" style={{ marginTop: '14px' }}>
-        <div>{tracks.length} Tracks</div>
+        <div>{t('album.trackCount', { count: tracks.length })}</div>
         <div style={{ marginTop: '8px' }}>
           <button
             className="ghost"
             onClick={() => setShowTracks(!showTracks)}
           >
-            {showTracks ? 'Hide tracks' : 'Show tracks'}
+            {showTracks ? t('album.hideTracks') : t('album.showTracks')}
           </button>
         </div>
         {showTracks && (
           <div style={{ marginTop: '8px' }}>
-            {tracks.map((t) => (
-              <div key={t.id} className="track">
-                {t.name}
+            {tracks.map((track) => (
+              <div key={track.id} className="track">
+                {track.name}
               </div>
             ))}
           </div>
@@ -59,7 +61,7 @@ function AlbumView({ album, tracks, onBack, votingActive }) {
 
       {tracks.length < 2 && (
         <div style={{ marginTop: '14px', color: 'var(--muted)' }}>
-          Not enough tracks to vote.
+          {t('album.notEnough')}
         </div>
       )}
     </div>

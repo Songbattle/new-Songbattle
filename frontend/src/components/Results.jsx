@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useI18n } from '../i18n'
 
 function Results({ tracks, albumName, shareUrl, album }) {
+  const { t } = useI18n()
   const [imageUrl, setImageUrl] = useState(null)
   const [uploadedUrl, setUploadedUrl] = useState(null)
   const [rankedItems, setRankedItems] = useState([])
@@ -13,8 +15,8 @@ function Results({ tracks, albumName, shareUrl, album }) {
     const scores = JSON.parse(localStorage.getItem('scores') || '{}')
     const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1])
     const items = ranked.map(([id, sc], i) => {
-      const t = tracks.find((tt) => tt.id === id)
-      return { rank: i + 1, name: t ? t.name : id, score: sc }
+      const track = tracks.find((tt) => tt.id === id)
+      return { rank: i + 1, name: track ? track.name : id, score: sc }
     })
     
     setRankedItems(items)
@@ -42,7 +44,8 @@ function Results({ tracks, albumName, shareUrl, album }) {
           albumId: albumId,
           items: items,
           shareUrl: shareUrl || '',
-          coverImage: coverImage
+          coverImage: coverImage,
+          subtitle: t('results.imageSubtitle')
         })
       })
       
@@ -70,16 +73,16 @@ function Results({ tracks, albumName, shareUrl, album }) {
     }
     try {
       await navigator.clipboard.writeText(linkToCopy)
-      alert('Link copied to clipboard')
+      alert(t('results.linkCopied'))
     } catch (e) {
-      alert('Copy failed')
+      alert(t('results.copyFailed'))
     }
   }
 
   const handleWebShare = async () => {
     if (navigator.share) {
       let shareFile = null
-      let shareText = `I ranked the songs in "${albumName}" by their awesomeness! 🎵`
+      let shareText = t('results.shareText', { album: albumName })
       
       // Try to use the generated image if available
       try {
@@ -97,7 +100,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
 
       try {
         const shareData = {
-          title: 'Spotify Battle Results',
+          title: t('results.shareTitle'),
           text: shareText,
           url: window.location.href,
         }
@@ -110,11 +113,11 @@ function Results({ tracks, albumName, shareUrl, album }) {
         await navigator.share(shareData)
       } catch (e) {
         if (e.name !== 'AbortError') {
-          alert('Share failed')
+          alert(t('results.shareFailed'))
         }
       }
     } else {
-      alert('Web Share not supported in this browser')
+      alert(t('results.shareUnsupported'))
     }
   }
 
@@ -126,25 +129,25 @@ function Results({ tracks, albumName, shareUrl, album }) {
   return (
     <div style={{ marginTop: '14px' }}>
       <div className="card results">
-        <h3>Results</h3>
+        <h3>{t('results.title')}</h3>
         {ranked.map(([id, sc], i) => {
-          const t = tracks.find((tt) => tt.id === id)
+          const track = tracks.find((tt) => tt.id === id)
           return (
             <div key={id}>
-              {i + 1}. {t ? t.name : id} — {sc} points
+              {i + 1}. {track ? track.name : id} — {t('results.points', { count: sc })}
             </div>
           )
         })}
 
         <div className="share-area">
           <button className="ghost" onClick={handleOpenImage}>
-            Open image
+            {t('results.openImage')}
           </button>
           <button className="ghost" onClick={handleCopyLink}>
-            Copy link
+            {t('results.copyLink')}
           </button>
           <button className="ghost" onClick={handleWebShare}>
-            Share with image
+            {t('results.shareWithImage')}
           </button>
         </div>
       </div>

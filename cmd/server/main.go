@@ -87,12 +87,20 @@ func main() {
 	addr := ":8080"
 	http.HandleFunc("/login", cors(adminLoginHandler))
 	http.HandleFunc("/admin-callback", cors(adminCallbackHandler))
+	// Rate limits (per client IP, token bucket). Configurable via environment.
+	apiLimiter := newRateLimiter(envInt("RATE_LIMIT_PER_MINUTE", 120), envInt("RATE_LIMIT_BURST", 30))
+	imageLimiter := newRateLimiter(envInt("RATE_LIMIT_IMAGE_PER_MINUTE", 6), envInt("RATE_LIMIT_IMAGE_BURST", 3))
+	apiLimiter.startCleanup(10 * time.Minute)
+	imageLimiter.startCleanup(10 * time.Minute)
+
+	http.HandleFunc("/login", cors(apiLimiter.limit(adminLoginHandler)))
+	http.HandleFunc("/admin-callback", cors(apiLimiter.limit(adminCallbackHandler)))
 	http.HandleFunc("/api/config", cors(configHandler))
-	http.HandleFunc("/api/generate-image", cors(generateImageHandler))
+	http.HandleFunc("/api/generate-image", cors(imageLimiter.limit(generateImageHandler)))
 	http.HandleFunc("/api/version", cors(versionHandler))
-	http.HandleFunc("/api/search", cors(searchHandler))
-	http.HandleFunc("/api/albums/", cors(albumTracksHandler))
-	http.HandleFunc("/api/playlists/", cors(playlistTracksHandler))
+	http.HandleFunc("/api/search", cors(apiLimiter.limit(searchHandler)))
+	http.HandleFunc("/api/albums/", cors(apiLimiter.limit(albumTracksHandler)))
+	http.HandleFunc("/api/playlists/", cors(apiLimiter.limit(playlistTracksHandler)))
 	http.HandleFunc("/api/token-status", cors(tokenStatusHandler))
 
 	// serve result images
@@ -849,6 +857,7 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 		} `json:"items"`
 		ShareURL   string `json:"shareUrl"`
 		CoverImage string `json:"coverImage"`
+		Subtitle   string `json:"subtitle"`
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -914,7 +923,10 @@ func generateImageHandler(w http.ResponseWriter, r *http.Request) {
 	y := titleHeight - 50
 	
 	// Subtitle first (centered)
-	subtitle := "My Favorite Ranking"
+	subtitle := req.Subtitle
+	if subtitle == "" || len(subtitle) > 60 {
+		subtitle = "My Favorite Ranking"
+	}
 	addLabel(img, width/2-len(subtitle)*4, y, subtitle, subtitleColor)
 	
 	// Title below (centered)
