@@ -78,4 +78,10 @@ func TestClientIPProxyHeaders(t *testing.T) {
 	if got := clientIP(req); got != "9.9.9.9" {
 		t.Fatalf("with TRUST_PROXY got %q", got)
 	}
+
+	t.Setenv("CLIENT_IP_HEADER", "CF-Connecting-IP")
+	req.Header.Set("CF-Connecting-IP", "8.8.8.8")
+	if got := clientIP(req); got != "8.8.8.8" {
+		t.Fatalf("with CLIENT_IP_HEADER got %q", got)
+	}
 }

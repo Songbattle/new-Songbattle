@@ -79,13 +79,17 @@ func (l *rateLimiter) startCleanup(interval time.Duration) {
 
 // clientIP returns the client address. Proxy headers are only honoured when
 // TRUST_PROXY=true, otherwise they could be spoofed to bypass the limit.
+// The header is configurable via CLIENT_IP_HEADER (default X-Forwarded-For, which
+// Traefik sets). Use CF-Connecting-IP only if Cloudflare is the outermost proxy
+// and requests can not reach the server without passing through it.
 func clientIP(r *http.Request) string {
 	if os.Getenv("TRUST_PROXY") == "true" {
-		if ip := strings.TrimSpace(r.Header.Get("CF-Connecting-IP")); ip != "" {
-			return ip
+		header := os.Getenv("CLIENT_IP_HEADER")
+		if header == "" {
+			header = "X-Forwarded-For"
 		}
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			if ip := strings.TrimSpace(strings.Split(xff, ",")[0]); ip != "" {
+		if v := r.Header.Get(header); v != "" {
+			if ip := strings.TrimSpace(strings.Split(v, ",")[0]); ip != "" {
 				return ip
 			}
 		}
