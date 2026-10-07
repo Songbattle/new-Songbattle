@@ -3,74 +3,78 @@ function Privacy() {
     <div className="privacy-page">
       <div className="privacy-container">
         <h1>Privacy Policy</h1>
-        <p className="privacy-date">Last updated: December 30, 2025</p>
+        <p className="privacy-date">Last updated: October 7, 2026</p>
         
         <section className="privacy-section">
           <h2>Data Collection</h2>
           <p>
-            Spotify Battle does not store or collect any personal user data. 
-            We do not save your Spotify account information, listening history, 
-            or any other personal information.
+            Songbattle does not require an account and does not collect personal
+            user data such as names, email addresses, or listening history. You do not
+            need to log in.
           </p>
         </section>
 
         <section className="privacy-section">
-          <h2>Spotify Authentication</h2>
+          <h2>Music Data</h2>
           <p>
-            When you log in with Spotify, we use OAuth authentication to access 
-            your public profile, playlists, and saved albums. This access is 
-            temporary and only used during your active session. We do not store 
-            your Spotify access tokens or credentials.
+            All music data is retrieved through a single server-side connection
+            operated by the site owner. Your own accounts are never accessed. Search
+            terms and album or playlist links you enter are sent through our server
+            to fetch the matching music data.
           </p>
+        </section>
+
+        <section className="privacy-section">
+          <h2>Local Storage in Your Browser</h2>
           <p>
-            You can revoke this app's access to your Spotify account at any time by visiting{' '}
-            <a 
-              href="https://www.spotify.com/us/account/apps/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="privacy-link"
-            >
-              Spotify Account Apps Settings
-            </a>.
+            Your battle progress (e.g. votes, current position, and scores) is saved
+            in your browser's local storage so you can continue where you left off.
+            This data stays on your device and is not sent to our server. You can
+            delete it at any time by clearing your browser's site data.
           </p>
         </section>
 
         <section className="privacy-section">
           <h2>Generated Images</h2>
           <p>
-            When you complete a battle and generate a results image, this image 
-            is stored on our server for up to 30 days. This allows you to share 
-            and access your results. After 30 days, these images are automatically 
-            deleted from our servers.
+            When you generate a results image, the image (including the title and
+            the ranked items) is stored on our server for up to 30 days so you can
+            share and access it. After that, it is automatically deleted. The image
+            link is hard to guess but publicly accessible to anyone who has it.
+          </p>
+          <p>
+            When an image is generated, a notification containing its title, number
+            of items, and link is sent to a private Discord channel used by the site
+            operator for monitoring. Please do not enter personal information as a
+            title.
           </p>
         </section>
 
         <section className="privacy-section">
           <h2>Cookies</h2>
           <p>
-            We use session cookies to maintain your login state during your visit. 
-            These cookies are temporary and do not track you across different websites.
+            Songbattle does not set its own tracking or login cookies, and we do
+            not use analytics or advertising. Third-party services such as Cloudflare
+            may set technical cookies (see below).
+          </p>
+        </section>
+
+        <section className="privacy-section">
+          <h2>Server Logs</h2>
+          <p>
+            Our server and hosting infrastructure may temporarily log technical
+            information such as IP address, request time, and requested URL for
+            security and troubleshooting. This data is not used to identify or track
+            individual users.
           </p>
         </section>
 
         <section className="privacy-section">
           <h2>Third-Party Services</h2>
           <p>
-            Spotify Battle integrates with Spotify's API. All music data, including 
-            album information, track details, and cover images, are provided directly 
-            by Spotify. Your use of Spotify's services is governed by{' '}
-            <a 
-              href="https://www.spotify.com/legal/privacy-policy/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="privacy-link"
-            >
-              Spotify's Privacy Policy
-            </a>.
-          </p>
-          <p>
-            Album artwork and other visual content displayed in this application 
-            are sourced from Spotify's API and remain the property of their 
+            Songbattle displays music data, including album information, track
+            details, and cover images, supplied by third-party music services.
+            Album artwork and other visual content remain the property of their
             respective copyright holders.
           </p>
         </section>
