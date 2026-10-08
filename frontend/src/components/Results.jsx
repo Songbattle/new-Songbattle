@@ -99,7 +99,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
         const shareData = {
           title: 'Songbattle Results',
           text: shareText,
-          url: window.location.href,
+          url: shareUrl || window.location.origin,
         }
         
         // Add image if we managed to fetch it
@@ -119,6 +119,25 @@ function Results({ tracks, albumName, shareUrl, album }) {
   }
 
 
+
+  const openShareWindow = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer,width=640,height=560')
+  }
+
+  const siteUrl = shareUrl || window.location.origin
+  const shareText = `I ranked the songs in "${albumName}" by their awesomeness! 🎵`
+  const enc = encodeURIComponent
+  const socialLinks = [
+    { name: 'WhatsApp', url: `https://wa.me/?text=${enc(`${shareText} ${siteUrl}`)}` },
+    { name: 'Telegram', url: `https://t.me/share/url?url=${enc(siteUrl)}&text=${enc(shareText)}` },
+    { name: 'X / Twitter', url: `https://twitter.com/intent/tweet?text=${enc(shareText)}&url=${enc(siteUrl)}` },
+    { name: 'Facebook', url: `https://www.facebook.com/sharer/sharer.php?u=${enc(siteUrl)}&quote=${enc(shareText)}` },
+    { name: 'Reddit', url: `https://www.reddit.com/submit?url=${enc(siteUrl)}&title=${enc(shareText)}` },
+    { name: 'LinkedIn', url: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(siteUrl)}` },
+    { name: 'Bluesky', url: `https://bsky.app/intent/compose?text=${enc(`${shareText} ${siteUrl}`)}` },
+    { name: 'Threads', url: `https://www.threads.net/intent/post?text=${enc(`${shareText} ${siteUrl}`)}` },
+    { name: 'E-Mail', url: `mailto:?subject=${enc('Songbattle Results')}&body=${enc(`${shareText}\n${siteUrl}`)}`, mail: true },
+  ]
 
   const scores = JSON.parse(localStorage.getItem('scores') || '{}')
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1])
@@ -146,6 +165,17 @@ function Results({ tracks, albumName, shareUrl, album }) {
           <button className="ghost" onClick={handleWebShare}>
             Share with image
           </button>
+        </div>
+        <div className="share-area">
+          {socialLinks.map((s) => (
+            <button
+              key={s.name}
+              className="ghost"
+              onClick={() => (s.mail ? (window.location.href = s.url) : openShareWindow(s.url))}
+            >
+              {s.name}
+            </button>
+          ))}
         </div>
       </div>
     </div>
