@@ -1,4 +1,4 @@
-# Spotify Battle - Centralized Authentication
+# Songbattle - Centralized Authentication
 
 ## Overview
 
@@ -59,7 +59,7 @@ Make sure the redirect URL is configured in your Spotify Developer Dashboard:
 - **Persistent Storage**: The token is stored in `./data/spotify_token.json` and persists across Docker restarts
 - **Auto-Refresh**: The token is automatically renewed 5 minutes before expiration
 - **Background Process**: A background routine checks the token every minute and refreshes it when needed
-- **Docker Volume**: The token file is persisted in the `spotify-battle-data` volume
+- **Docker Volume**: The token file is persisted in the `songbattle-data` volume
 - A valid token is automatically used for every API request
 
 ### Startup Behavior

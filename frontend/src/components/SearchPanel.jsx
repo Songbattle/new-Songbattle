@@ -33,7 +33,7 @@ function SearchPanel({ onSelectAlbum, user, tokenStatus, showIntro, loginInfo })
       )}
       {showIntro && tokenStatus && (
         <div style={{ marginBottom: '20px', padding: '16px', background: 'rgba(29, 185, 84, 0.1)', borderRadius: '8px', textAlign: 'center', color: '#1db954', fontSize: '14px', lineHeight: '1.6' }}>
-          <strong>Welcome to Spotify Battle!</strong><br />
+          <strong>Welcome to Songbattle!</strong><br />
           Search and select an album below to start comparing tracks and find your favorites.
         </div>
       )}

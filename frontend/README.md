@@ -1,6 +1,6 @@
-# Spotify Battle Frontend
+# Songbattle Frontend
 
-React + Vite frontend for the Spotify Battle app.
+React + Vite frontend for the Songbattle app.
 
 ## Development
 

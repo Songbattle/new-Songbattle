@@ -64,7 +64,7 @@ function App() {
       setLoginInfo({ type: 'warning', message: event.detail.message })
       setTimeout(() => setLoginInfo(null), 10000)
     }
-    window.addEventListener('spotify-rate-limit', handleRateLimit)
+    window.addEventListener('api-rate-limit', handleRateLimit)
     
     // Check URL for privacy page
     if (window.location.pathname === '/privacy') {
@@ -78,7 +78,7 @@ function App() {
     window.addEventListener('popstate', handlePopState)
     return () => {
       window.removeEventListener('popstate', handlePopState)
-      window.removeEventListener('spotify-rate-limit', handleRateLimit)
+      window.removeEventListener('api-rate-limit', handleRateLimit)
     }
   }, [])
 

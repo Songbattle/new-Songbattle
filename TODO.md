@@ -1,5 +1,5 @@
 
-# Spotify Battle – Todo List
+# Songbattle – Todo List
 
 Use this checklist to implement the project from setup to deployment.
 
