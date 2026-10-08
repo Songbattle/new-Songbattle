@@ -817,7 +817,10 @@ func configHandler(w http.ResponseWriter, r *http.Request) {
 		// provide empty string instead of null for JS friendliness
 		share = ""
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"share_url": share})
+	writeJSON(w, http.StatusOK, map[string]string{
+		"share_url":       share,
+		"facebook_app_id": os.Getenv("FACEBOOK_APP_ID"),
+	})
 }
 
 // versionHandler returns build version information

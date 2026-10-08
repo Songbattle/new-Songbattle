@@ -15,6 +15,9 @@ services:
       
       # Optional: Custom share URL for results
       - SHARE_URL=${SHARE_URL:-}
+
+      # Optional: Meta (Facebook) App ID for the official Share Dialog
+      - FACEBOOK_APP_ID=${FACEBOOK_APP_ID:-}
       
       # Optional: Image cleanup settings (defaults shown)
       - UPLOAD_TTL_DAYS=${UPLOAD_TTL_DAYS:-30}
