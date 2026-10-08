@@ -127,15 +127,18 @@ function Results({ tracks, albumName, shareUrl, album }) {
   const siteUrl = shareUrl || window.location.origin
   const shareText = `I ranked the songs in "${albumName}" by their awesomeness! 🎵`
   const enc = encodeURIComponent
+  // Social intents can't attach files, so the ranking image goes in as a link
+  const imageLink = imageUrl ? (imageUrl.startsWith('/') ? window.location.origin + imageUrl : imageUrl) : ''
+  const textWithImage = imageLink ? `${shareText}\n${imageLink}` : shareText
   const socialLinks = [
-    { name: 'WhatsApp', url: `https://wa.me/?text=${enc(`${shareText} ${siteUrl}`)}` },
-    { name: 'Telegram', url: `https://t.me/share/url?url=${enc(siteUrl)}&text=${enc(shareText)}` },
-    { name: 'X / Twitter', url: `https://twitter.com/intent/tweet?text=${enc(shareText)}&url=${enc(siteUrl)}` },
-    { name: 'Reddit', url: `https://www.reddit.com/submit?url=${enc(siteUrl)}&title=${enc(shareText)}` },
+    { name: 'WhatsApp', url: `https://wa.me/?text=${enc(`${textWithImage}\n${siteUrl}`)}` },
+    { name: 'Telegram', url: `https://t.me/share/url?url=${enc(siteUrl)}&text=${enc(textWithImage)}` },
+    { name: 'X / Twitter', url: `https://twitter.com/intent/tweet?text=${enc(textWithImage)}&url=${enc(siteUrl)}` },
+    { name: 'Reddit', url: `https://www.reddit.com/submit?url=${enc(imageLink || siteUrl)}&title=${enc(shareText)}` },
     { name: 'LinkedIn', url: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(siteUrl)}` },
-    { name: 'Bluesky', url: `https://bsky.app/intent/compose?text=${enc(`${shareText} ${siteUrl}`)}` },
-    { name: 'Threads', url: `https://www.threads.net/intent/post?text=${enc(`${shareText} ${siteUrl}`)}` },
-    { name: 'E-Mail', url: `mailto:?subject=${enc('Songbattle Results')}&body=${enc(`${shareText}\n${siteUrl}`)}`, mail: true },
+    { name: 'Bluesky', url: `https://bsky.app/intent/compose?text=${enc(`${textWithImage}\n${siteUrl}`)}` },
+    { name: 'Threads', url: `https://www.threads.net/intent/post?text=${enc(`${textWithImage}\n${siteUrl}`)}` },
+    { name: 'E-Mail', url: `mailto:?subject=${enc('Songbattle Results')}&body=${enc(`${textWithImage}\n${siteUrl}`)}`, mail: true },
   ]
 
   const scores = JSON.parse(localStorage.getItem('scores') || '{}')
