@@ -88,7 +88,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
           const imgResponse = await fetch(window.location.origin + uploadedUrl)
           if (imgResponse.ok) {
             const blob = await imgResponse.blob()
-            shareFile = new File([blob], 'spotify-battle.png', { type: 'image/png' })
+            shareFile = new File([blob], 'songbattle.png', { type: 'image/png' })
           }
         }
       } catch (e) {
@@ -97,7 +97,7 @@ function Results({ tracks, albumName, shareUrl, album }) {
 
       try {
         const shareData = {
-          title: 'Spotify Battle Results',
+          title: 'Songbattle Results',
           text: shareText,
           url: window.location.href,
         }

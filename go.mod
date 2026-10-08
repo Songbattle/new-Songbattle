@@ -1,4 +1,4 @@
-module spotify-battle
+module songbattle
 
 go 1.25.0
 

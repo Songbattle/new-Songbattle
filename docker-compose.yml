@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  spotify-battle:
+  songbattle:
     build: .
-    image: ghcr.io/t0biii/spotify-battle:latest
-    container_name: spotify-battle
+    image: ghcr.io/t0biii/songbattle:latest
+    container_name: songbattle
     ports:
       - "8080:8080"
     environment:
@@ -21,9 +21,9 @@ services:
       - UPLOAD_CLEANUP_INTERVAL_HOURS=${UPLOAD_CLEANUP_INTERVAL_HOURS:-24}
     volumes:
       # Persist generated result images across container restarts
-      - spotify-battle-results:/app/web/results
+      - songbattle-results:/app/web/results
       # Persist Spotify tokens across container restarts
-      - spotify-battle-data:/app/data
+      - songbattle-data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/config"]
@@ -33,7 +33,7 @@ services:
       start_period: 40s
 
 volumes:
-  spotify-battle-results:
+  songbattle-results:
     driver: local
-  spotify-battle-data:
+  songbattle-data:
     driver: local
