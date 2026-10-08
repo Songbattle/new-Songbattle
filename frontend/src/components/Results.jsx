@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function Results({ tracks, albumName, shareUrl, album, facebookAppId }) {
+function Results({ tracks, albumName, shareUrl, album }) {
   const [imageUrl, setImageUrl] = useState(null)
   const [uploadedUrl, setUploadedUrl] = useState(null)
   const [rankedItems, setRankedItems] = useState([])
@@ -127,17 +127,10 @@ function Results({ tracks, albumName, shareUrl, album, facebookAppId }) {
   const siteUrl = shareUrl || window.location.origin
   const shareText = `I ranked the songs in "${albumName}" by their awesomeness! 🎵`
   const enc = encodeURIComponent
-  // Official Meta Share Dialog (works on web and mobile); needs a Meta App ID.
-  // Without one, fall back to the legacy sharer endpoint.
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-  const facebookUrl = facebookAppId
-    ? `https://www.facebook.com/dialog/share?app_id=${enc(facebookAppId)}&display=${isMobile ? 'touch' : 'popup'}&href=${enc(siteUrl)}&redirect_uri=${enc(siteUrl)}`
-    : `https://www.facebook.com/sharer/sharer.php?u=${enc(siteUrl)}`
   const socialLinks = [
     { name: 'WhatsApp', url: `https://wa.me/?text=${enc(`${shareText} ${siteUrl}`)}` },
     { name: 'Telegram', url: `https://t.me/share/url?url=${enc(siteUrl)}&text=${enc(shareText)}` },
     { name: 'X / Twitter', url: `https://twitter.com/intent/tweet?text=${enc(shareText)}&url=${enc(siteUrl)}` },
-    { name: 'Facebook', url: facebookUrl },
     { name: 'Reddit', url: `https://www.reddit.com/submit?url=${enc(siteUrl)}&title=${enc(shareText)}` },
     { name: 'LinkedIn', url: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(siteUrl)}` },
     { name: 'Bluesky', url: `https://bsky.app/intent/compose?text=${enc(`${shareText} ${siteUrl}`)}` },
