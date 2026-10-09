@@ -1,5 +1,5 @@
 const STEPS = [
-  { icon: '🔍', title: 'Pick an album', text: 'Search Spotify for any album or playlist.' },
+  { icon: '🔍', title: 'Pick an album', text: 'Search Spotify for any album.' },
   { icon: '⚔️', title: 'Battle it out', text: 'Choose your favorite in head-to-head duels.' },
   { icon: '🏆', title: 'Share your ranking', text: 'Get your personal track ranking as an image.' },
 ]
