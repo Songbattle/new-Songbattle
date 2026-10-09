@@ -7,6 +7,7 @@ import Voting from './components/Voting'
 import Results from './components/Results'
 import Sidebar from './components/Sidebar'
 import Footer from './components/Footer'
+import Hero from './components/Hero'
 import Privacy from './components/Privacy'
 
 // Efficient merge-sort based voting - only necessary comparisons
@@ -244,6 +245,7 @@ function App() {
 
         <div className="centered-content">
           <div>
+            {!currentAlbum && <Hero />}
             {!currentAlbum && <SearchPanel onSelectAlbum={handleSelectAlbum} tokenStatus={tokenStatus} showIntro={!currentAlbum} loginInfo={loginInfo} />}
 
             {currentAlbum && (
