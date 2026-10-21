@@ -717,10 +717,20 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 func albumTracksHandler(w http.ResponseWriter, r *http.Request) {
 	// Expect path /api/albums/{id}/tracks
 	p := strings.TrimPrefix(r.URL.Path, "/api/albums/")
+	metaOnly := !strings.HasSuffix(strings.Trim(p, "/"), "/tracks")
 	id := strings.TrimSuffix(p, "/tracks")
 	id = strings.Trim(id, "/")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing album id"})
+		return
+	}
+	if metaOnly {
+		// /api/albums/{id}: metadata only, used for shared deep links
+		if spotifyClientID == "" || spotifyClientSecret == "" {
+			writeJSON(w, http.StatusOK, map[string]interface{}{"id": id, "name": "Mock Album " + id, "images": []interface{}{}})
+			return
+		}
+		proxySpotify(w, fmt.Sprintf("https://api.spotify.com/v1/albums/%s", id), "/api/albums")
 		return
 	}
 	if spotifyClientID == "" || spotifyClientSecret == "" {
@@ -765,10 +775,20 @@ func albumTracksHandler(w http.ResponseWriter, r *http.Request) {
 func playlistTracksHandler(w http.ResponseWriter, r *http.Request) {
 	// Expect path /api/playlists/{id}/tracks
 	p := strings.TrimPrefix(r.URL.Path, "/api/playlists/")
+	metaOnly := !strings.HasSuffix(strings.Trim(p, "/"), "/tracks")
 	id := strings.TrimSuffix(p, "/tracks")
 	id = strings.Trim(id, "/")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing playlist id"})
+		return
+	}
+	if metaOnly {
+		// /api/playlists/{id}: metadata only, used for shared deep links
+		if spotifyClientID == "" || spotifyClientSecret == "" {
+			writeJSON(w, http.StatusOK, map[string]interface{}{"id": id, "name": "Mock Playlist " + id, "images": []interface{}{}})
+			return
+		}
+		proxySpotify(w, fmt.Sprintf("https://api.spotify.com/v1/playlists/%s", id), "/api/playlists")
 		return
 	}
 	if spotifyClientID == "" || spotifyClientSecret == "" {
@@ -1137,4 +1157,30 @@ func spaHandler(w http.ResponseWriter, r *http.Request) {
 	
 	// If nothing worked, return 404
 	http.NotFound(w, r)
+}
+
+// proxySpotify forwards a GET to the Spotify API with the stored token.
+func proxySpotify(w http.ResponseWriter, apiURL, label string) {
+	token, err := getValidToken()
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "no valid token available"})
+		return
+	}
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode == 429 {
+		notifyDiscordRateLimit()
+	} else if resp.StatusCode >= 400 {
+		notifyDiscordError(label, resp.StatusCode, string(body))
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(resp.StatusCode)
+	w.Write(body)
 }

@@ -2,6 +2,24 @@ import { useState } from 'react'
 
 function AlbumView({ album, tracks, onBack, votingActive }) {
   const [showTracks, setShowTracks] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const copyLink = async () => {
+    const type = album.type === 'playlist' ? 'playlist' : 'album'
+    const url = `${window.location.origin}/#${type}=${album.id}`
+    try {
+      if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+        await navigator.share({ title: `Songbattle: ${album.name}`, url })
+        return
+      }
+      await navigator.clipboard.writeText(url)
+    } catch (e) {
+      window.prompt('Copy this link:', url)
+      return
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const coverImage = album.images?.[0]?.url || `https://picsum.photos/seed/${album.id}/64`
 
@@ -29,7 +47,10 @@ function AlbumView({ album, tracks, onBack, votingActive }) {
           />
           <h2 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{album.name}</h2>
         </div>
-        <div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="ghost" onClick={copyLink}>
+            {copied ? 'Link copied!' : 'Share'}
+          </button>
           <button className="ghost" onClick={onBack}>
             Back to Search
           </button>

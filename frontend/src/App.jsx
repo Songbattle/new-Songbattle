@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from './utils/api'
 import Header from './components/Header'
 import SearchPanel from './components/SearchPanel'
@@ -54,6 +54,7 @@ function App() {
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [tokenStatus, setTokenStatus] = useState(false)
   const [loginInfo, setLoginInfo] = useState(null)
+  const currentRef = useRef(null)
 
   useEffect(() => {
     loadConfig()
@@ -72,13 +73,18 @@ function App() {
       setShowPrivacy(true)
     }
 
+    // Open a shared album/playlist from the URL hash (#album=ID / #playlist=ID)
+    loadFromHash()
+
     // Handle browser navigation
     const handlePopState = () => {
       setShowPrivacy(window.location.pathname === '/privacy')
     }
     window.addEventListener('popstate', handlePopState)
+    window.addEventListener('hashchange', loadFromHash)
     return () => {
       window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('hashchange', loadFromHash)
       window.removeEventListener('api-rate-limit', handleRateLimit)
     }
   }, [])
@@ -131,7 +137,26 @@ function App() {
     }
   }
 
+  const loadFromHash = async () => {
+    const m = window.location.hash.match(/^#(album|playlist)=([A-Za-z0-9]+)$/i)
+    if (!m) return
+    const type = m[1].toLowerCase()
+    const id = m[2]
+    if (currentRef.current === `${type}:${id}`) return
+    const meta = await api(`/api/${type}s/${id}`)
+    if (!meta || meta.error || !meta.id) {
+      setLoginInfo({ type: 'warning', message: `Could not load the shared ${type}.` })
+      setTimeout(() => setLoginInfo(null), 8000)
+      return
+    }
+    handleSelectAlbum({ ...meta, type })
+  }
+
   const handleSelectAlbum = async (album) => {
+    currentRef.current = `${album.type}:${album.id}`
+    if (window.location.hash !== `#${album.type}=${album.id}`) {
+      window.history.replaceState({}, '', `${window.location.pathname}#${album.type}=${album.id}`)
+    }
     setCurrentAlbum(album)
     const endpoint =
       album.type === 'playlist'
@@ -222,6 +247,8 @@ function App() {
   }
 
   const handleBackToSearch = () => {
+    currentRef.current = null
+    window.history.replaceState({}, '', window.location.pathname + window.location.search)
     setCurrentAlbum(null)
     setTracks([])
     setVotingActive(false)
